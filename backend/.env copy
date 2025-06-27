@@ -1,0 +1,10 @@
+MONGO_URI=monogurl
+PORT=5050
+JWT_SECRET=thisisourmedilinksecret
+EMAIL_USER=medilink.dal@gmail.com
+EMAIL_PASS=password
+GOOGLE_CLIENT_ID=id
+GOOGLE_CLIENT_SECRET=secret
+GOOGLE_CALLBACK_URL=http://localhost:5050/api/auth/google/callback
+CLIENT_URL=http://localhost:3000
+
