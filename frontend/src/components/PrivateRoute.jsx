@@ -8,7 +8,7 @@ const PrivateRoute = ({ allowedRoles }) => {
     console.log(authUser)
   },[]);
   if (!token) {
-    return <Navigate to="/login/user" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (!authUser) {
