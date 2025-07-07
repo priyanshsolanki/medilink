@@ -14,7 +14,7 @@ export const Dashboard = () => {
         className="flex-1 p-6"
         >
           <h1 className="text-3xl font-bold text-gray-800">
-            Welcome, {authUser.payload.name}!
+            Welcome, {authUser.role}!
           </h1>
       </main>
     </div>
