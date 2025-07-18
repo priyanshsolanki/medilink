@@ -50,7 +50,6 @@ export default function MediLinkLogin() {
           setStep('verify');
         }
       } catch (err) {
-        // alert(err.message);
       } finally {
         setLoading(false);
       }
@@ -73,7 +72,6 @@ export default function MediLinkLogin() {
       }
       
     } catch (err) {
-      // alert(err.message);
     } finally {
       setLoading(false);
     }
@@ -86,29 +84,6 @@ export default function MediLinkLogin() {
     setOtp('');
     setTmpOtpToken(null);
   };
-
-  // const handleResendOtp = async () => {
-  //   try {
-  //     setLoading(true);
-  //     const res = await fetch('/api/auth/request-otp-token', {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify({
-  //         email: formik.values.email,
-  //         password: formik.values.password,
-  //         loginType
-  //       })
-  //     });
-  //     const data = await res.json();
-  //     if (!res.ok) throw new Error('Failed to resend OTP');
-  //     setTmpOtpToken(data.tmpOtpToken);
-  //     alert('OTP resent successfully!');
-  //   } catch (err) {
-  //     alert(err.message);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   if (loginType === 'select') {
     return (

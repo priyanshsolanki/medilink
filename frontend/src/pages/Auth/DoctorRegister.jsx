@@ -128,7 +128,6 @@ export default function DoctorRegister() {
     });
 
     if (Object.keys(errors).length === 0) {
-      console.log('Doctor registration attempt:', formData);
       const { confirmPassword, agreeToTerms, ...submitData } = formData;
 
       try {
@@ -137,11 +136,8 @@ export default function DoctorRegister() {
         if (verifiedUser) {
           navigate('/login');
         }
-        console.log('Registering with:', submitData);
-        alert('Registration successful! (This is a demo)');
       } catch (err) {
         console.error('Registration error:', err);
-        alert('Registration failed. Please try again.');
       }
     }
   };

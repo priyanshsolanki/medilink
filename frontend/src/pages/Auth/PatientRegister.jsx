@@ -51,7 +51,6 @@ export default function PatientRegister() {
         .oneOf([true], 'You must agree to the terms and conditions')
     }),
     onSubmit: async (values) => {
-      console.log('Patient registration:', values);
       const {confirmPassword, agreeToTerms, ...val} = values;
       try {
         const verifiedUser = await register(val);

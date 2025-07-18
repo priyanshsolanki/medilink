@@ -6,6 +6,7 @@ import PatientRegister from "../pages/Auth/PatientRegister";
 import DoctorRegister from "../pages/Auth/DoctorRegister";
 import GoogleAuthSuccess from "../pages/Auth/GoogleAuthSuccess";
 import EmailVerification from "../pages/Auth/EmailVerification";
+import UnauthorizedPage from "../pages/Auth/UnauthorizedPage";
 
 const PublicRoutes = () => {
   return (
@@ -18,7 +19,8 @@ const PublicRoutes = () => {
        <Route exact path="/doctor-register" element={<DoctorRegister />} /> 
        <Route path="/google-auth-success" element={<GoogleAuthSuccess />} />
 
-      
+       <Route exact path="/unauthorized" element={<UnauthorizedPage/>} /> 
+
     </Routes>
   );
 };
