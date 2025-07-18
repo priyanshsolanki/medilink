@@ -69,9 +69,9 @@ export default function MediLinkLogin() {
 
       if (verifiedUser) {
         setVerifiedAuthUser(verifiedUser);
-        navigate(loginType === 'patient' ? '/dashboard' : '/dashboard');
+        navigate(`/${verifiedUser.role}/dashboard`);
       }
-      navigate(loginType === 'patient' ? '/dashboard' : '/dashboard');
+      
     } catch (err) {
       // alert(err.message);
     } finally {
@@ -272,6 +272,8 @@ export default function MediLinkLogin() {
             >
               {loading ? 'Please wait...' : 'Next'}
             </button>
+            
+            {loginType === 'patient' && <>
                {/* Divider */}
                <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -298,7 +300,21 @@ export default function MediLinkLogin() {
                 Continue with Google
               </button>
               </div>
+              </>}
+              <div className="mt-8 text-center border-t border-gray-200 pt-6">
+            <p className="text-gray-600">
+              Don't have an account?{' '}
+              <button 
+                type="button"
+                onClick={()=>{navigate(`/${loginType}-register`)}}
+                className="text-blue-600 hover:text-blue-700 font-medium underline"
+              >
+                Sign up here
+              </button>
+            </p>
+          </div>
           </form>
+          
         ) : (
           <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
             {/* OTP Input */}

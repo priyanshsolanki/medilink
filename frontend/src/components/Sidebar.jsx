@@ -16,7 +16,7 @@ const Sidebar = ({ name }) => {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
-  const [userFirstName, setUserFirstName] = useState(authUser?.role);
+  const [userFirstName, setUserFirstName] = useState(authUser?.name);
 
   return (
     <>

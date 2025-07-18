@@ -1,17 +1,26 @@
 // controllers/authController.js
 const User = require('../models/User');
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { generateToken } = require('../utils/jwt');
-const speakeasy = require('speakeasy');
-const qrcode = require('qrcode');
 const jwt = require('jsonwebtoken');
 const { sendEmail } = require('../utils/sendEmail');
 
 exports.register = async (req, res) => {
-  const { name, gender, dob, email, password, role } = req.body;
+  const { name, gender, dob, email, password, role,...optionalFields } = req.body;
 
   let user = await User.findOne({ email });
   if (user) return res.status(400).json({ msg: 'User already exists' });
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+
+
+  const verificationUrl = `${process.env.CLIENT_URL}/verify-email?token=${verificationToken}&email=${email}`;
+
+  await sendEmail(
+    email,
+    'Verify Your Email',
+    `<p>Hi ${name},</p><p>Please click the link below to verify your email:</p><a href="${verificationUrl}">Verify Email</a>`
+  );
 
   user = new User({
     name,
@@ -19,22 +28,40 @@ exports.register = async (req, res) => {
     dob,
     email,
     password: await bcrypt.hash(password, 10),
-    role
+    role,
+    verificationToken,
+    ...optionalFields
   });
   await user.save();
 
-  const token = generateToken(user);
   res.json({
-    token,
     user: {
       id: user._id,
       name,
       gender,
       dob,
       email,
-      role
+      role,
+      ...optionalFields
     }
   });
+};
+
+exports.verifyEmail = async (req, res) => {
+  const { token, email } = req.query;
+
+  const user = await User.findOne({ email });
+  if (!user) return res.status(400).json({ msg: 'User not found' });
+
+  if (user.verificationToken !== token) {
+    return res.status(400).json({ msg: 'Invalid or expired token' });
+  }
+
+  user.isVerified = true;
+  user.verificationToken = undefined; // remove the token
+  await user.save();
+
+  res.json({ msg: 'Email verified successfully' });
 };
 
 // -------- Login: Sends OTP, no login yet --------
@@ -43,6 +70,11 @@ exports.login = async (req, res) => {
   const user = await User.findOne({ email });
   if (!user || !(await bcrypt.compare(password, user.password))) {
     return res.status(400).json({ msg: 'Invalid credentials' });
+  }
+  
+  // Check if the email is verified
+  if (!user.isVerified) {
+    return res.status(403).json({ msg: 'Email not verified. Please check your inbox to verify your account.' });
   }
 
   // Generate OTP and stateless JWT for verification

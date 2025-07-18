@@ -25,7 +25,7 @@ export default function GoogleAuthSuccess() {
 
       setVerifiedAuthUser(user);
       toast.success('Google login successful!');
-      navigate(user.role === 'doctor' ? '/dashboard' : '/dashboard');
+      navigate(`/${user.role}/dashboard`);
     } else {
       toast.error('Google login failed!');
       navigate('/login');

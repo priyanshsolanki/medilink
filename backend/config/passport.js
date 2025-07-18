@@ -28,7 +28,8 @@ passport.use(
             gender: 'other',
             dob: new Date('1970-01-01'),
             password: hashedPassword,
-            role: 'patient'
+            role: 'patient',
+            isVerified: true, // since Google verified the email
           });
           await user.save();
 
