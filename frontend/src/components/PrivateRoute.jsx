@@ -5,14 +5,11 @@ import {jwtDecode} from 'jwt-decode';
 
 const PrivateRoute = ({ allowedRoles }) => {
   const { authUser,token } = useAuth();
-  const {role} = jwtDecode(token); // Decode token
   if (!token) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!authUser) {
-    return <Navigate to="/unauthorized" replace />;
-  }
+  const {role} = jwtDecode(token); // Decode token
 
   if (!allowedRoles.includes(role))
     return <Navigate to="/unauthorized" replace />;
