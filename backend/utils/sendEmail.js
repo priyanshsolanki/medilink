@@ -12,5 +12,5 @@ exports.sendEmail = async (to, subject, text) => {
     family: 4
   });
 
-  await transporter.sendMail({ from: process.env.EMAIL_USER, to, subject, text });
+  await transporter.sendMail({ from: process.env.EMAIL_USER, to, subject, html:text });
 };

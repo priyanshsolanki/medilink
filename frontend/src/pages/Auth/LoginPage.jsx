@@ -14,6 +14,8 @@ import {
   User,
   ShieldCheck
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { authenticate, verifyLoginOtp } from '../../api/authService';
 
 export default function MediLinkLogin() {
   const navigate = useNavigate();
@@ -23,6 +25,7 @@ export default function MediLinkLogin() {
   const [tmpOtpToken, setTmpOtpToken] = useState(null);
   const [loading, setLoading] = useState(false);
   const [otp, setOtp] = useState('');
+  const { setVerifiedAuthUser } = useAuth();
 
   const isPatient = loginType === 'patient';
   const primaryColor = isPatient ? 'blue' : 'green';
@@ -41,25 +44,12 @@ export default function MediLinkLogin() {
     onSubmit: async (values) => {
       try {
         setLoading(true);
-
-        // Step 1: Email + Password
-        // const res = await fetch('/api/auth/request-otp-token', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({
-        //     email: values.email,
-        //     password: values.password,
-        //     loginType
-        //   })
-        // });
-
-        // const data = await res.json();
-        // if (!res.ok) throw new Error(data.message || 'Login failed');
-
-        setTmpOtpToken("1234");
-        setStep('verify');
+        const res = await authenticate(values.email, values.password);
+        if (res?.otpToken) {
+          setTmpOtpToken(res.otpToken);
+          setStep('verify');
+        }
       } catch (err) {
-        alert(err.message);
       } finally {
         setLoading(false);
       }
@@ -74,20 +64,14 @@ export default function MediLinkLogin() {
       }
 
       setLoading(true);
-      const res = await fetch('/api/auth/verify-otp-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tmpOtpToken, otp })
-      });
+      const verifiedUser = await verifyLoginOtp({ otpToken: tmpOtpToken, otp });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Verification failed');
-
-      localStorage.setItem('authToken', data.authToken);
-      alert('Login successful!');
-      navigate(loginType === 'patient' ? '/patientDashboard' : '/doctorDashboard');
+      if (verifiedUser) {
+        setVerifiedAuthUser(verifiedUser);
+        navigate(`/${verifiedUser.role}/dashboard`);
+      }
+      
     } catch (err) {
-      alert(err.message);
     } finally {
       setLoading(false);
     }
@@ -99,29 +83,6 @@ export default function MediLinkLogin() {
     setStep('login');
     setOtp('');
     setTmpOtpToken(null);
-  };
-
-  const handleResendOtp = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch('/api/auth/request-otp-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formik.values.email,
-          password: formik.values.password,
-          loginType
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error('Failed to resend OTP');
-      setTmpOtpToken(data.tmpOtpToken);
-      alert('OTP resent successfully!');
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setLoading(false);
-    }
   };
 
   if (loginType === 'select') {
@@ -286,6 +247,8 @@ export default function MediLinkLogin() {
             >
               {loading ? 'Please wait...' : 'Next'}
             </button>
+            
+            {loginType === 'patient' && <>
                {/* Divider */}
                <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -300,6 +263,7 @@ export default function MediLinkLogin() {
             <div className="space-y-3">
               <button
                 type="button"
+                onClick={() => window.location.href = `${process.env.REACT_APP_BACKEND_BASE_URL}/auth/google`}
                 className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors duration-200"
               >
                 <svg className="h-5 w-5 mr-3" viewBox="0 0 24 24">
@@ -311,7 +275,21 @@ export default function MediLinkLogin() {
                 Continue with Google
               </button>
               </div>
+              </>}
+              <div className="mt-8 text-center border-t border-gray-200 pt-6">
+            <p className="text-gray-600">
+              Don't have an account?{' '}
+              <button 
+                type="button"
+                onClick={()=>{navigate(`/${loginType}-register`)}}
+                className="text-blue-600 hover:text-blue-700 font-medium underline"
+              >
+                Sign up here
+              </button>
+            </p>
+          </div>
           </form>
+          
         ) : (
           <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
             {/* OTP Input */}
@@ -334,14 +312,6 @@ export default function MediLinkLogin() {
               disabled={loading}
             >
               {loading ? 'Verifying...' : 'Verify & Sign In'}
-            </button>
-
-            <button
-              onClick={handleResendOtp}
-              className="text-sm text-blue-600 hover:text-blue-800 underline"
-              disabled={loading}
-            >
-              Resend OTP
             </button>
           </div>
         )}
