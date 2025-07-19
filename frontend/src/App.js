@@ -5,6 +5,7 @@ import { ToastContainer } from "react-toastify";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoutes from "./routes/ProtectedRoutes";
 
+
 function AppWrapper() {
   return (
     <>
