@@ -3,13 +3,14 @@ import {
   authenticate as authServiceLogin,
   logout as authServiceLogout
 } from "../api/authService";
+import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [authUser, setAuthUser] = useState(JSON.parse(localStorage.getItem('auth')));
   const [token, setToken] = useState(localStorage.getItem('token'));
-
+  const navigate = useNavigate(); 
   // On initial load
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('auth'));
@@ -27,7 +28,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", auth.jwtToken);
 
     setAuthUser(auth);
-    setToken(auth.jwtToken)
+    setToken(auth.jwtToken);
+    navigate(`${auth.role}/dashboard`);
   };
 
   // 3. Logout

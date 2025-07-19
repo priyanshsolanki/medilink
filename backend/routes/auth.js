@@ -4,6 +4,8 @@ const authController = require('../controllers/authController');
 const passport = require('passport');
 const { generateToken } = require('../utils/jwt');
 
+// For email verification
+router.get('/verify-email', authController.verifyEmail);
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.post('/verify-login-otp', authController.verifyLoginOtp);

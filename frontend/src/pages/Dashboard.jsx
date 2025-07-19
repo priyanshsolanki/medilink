@@ -5,7 +5,6 @@ import { useAuth } from "../context/AuthContext";
 
 export const Dashboard = () => {
   const {authUser} = useAuth();
-
   return (
     <div className="min-h-screen flex bg-gray-100">
       <Sidebar />
@@ -14,7 +13,7 @@ export const Dashboard = () => {
         className="flex-1 p-6"
         >
           <h1 className="text-3xl font-bold text-gray-800">
-            Welcome, {authUser.payload.name}!
+            Welcome, {authUser.name}!
           </h1>
       </main>
     </div>
