@@ -1,0 +1,231 @@
+const Appointment = require('../models/Appointment');
+const Availability = require('../models/Availability');
+const { generateCallLinkToken } = require('../utils/generateCallLink');
+
+function getTimeSlots(startTime, endTime) {
+    const slots = [];
+    let currentTime = new Date(`1970-01-01 ${startTime}`);
+    const end = new Date(`1970-01-01 ${endTime}`);
+
+    while (currentTime < end) {
+        slots.push(currentTime.toTimeString().slice(0, 5)); // HH:MM format
+        currentTime.setMinutes(currentTime.getMinutes() + 30);
+    }
+    return slots;
+}
+
+exports.bookAppointment = async (req, res) => {
+    try {
+        const { patientId, doctorId, date, time } = req.body;
+
+        if (!patientId || !doctorId || !date || !time)
+            return res.status(400).json({ message: 'Missing required fields' });
+
+        if (req.user.role !== 'patient')
+            return res.status(403).json({ message: 'Only patients can book appointments' });
+
+        if (req.user.id !== patientId) {
+            console.log('Logged in userId:', req.user.id, 'Requested patientId:', patientId);
+            return res.status(403).json({ message: 'Cannot book appointment for other patients' });
+        }
+
+        if (isNaN(Date.parse(date))) return res.status(400).json({ message: 'Invalid date' });
+        if (!/^\d{2}:\d{2}$/.test(time)) return res.status(400).json({ message: 'Invalid time format' });
+
+        // Fetch doctor's availability for the day
+        const availability = await Availability.findOne({ doctorId, date });
+        if (!availability) {
+            return res.status(409).json({ message: 'No availability for this doctor on the selected date' });
+        }
+
+        const { startTime, endTime } = availability;
+        const availableSlots = getTimeSlots(startTime, endTime);
+
+        // Check if the requested time is within available slots
+        if (!availableSlots.includes(time)) {
+            return res.status(409).json({ message: 'Selected time is not within available slots' });
+        }
+
+        // Check for existing bookings
+        const conflict = await Appointment.findOne({ doctorId, date, time, status: { $ne: 'cancelled' } });
+        if (conflict) {
+            return res.status(409).json({ message: 'Time slot already booked by another patient' });
+        }
+
+        const appointment = new Appointment({ patientId, doctorId, date, time, status: 'confirmed' });
+        await appointment.save();
+
+        const callLink = generateCallLinkToken(appointment, req.user);
+
+        res.status(201).json({
+            message: 'Appointment booked successfully',
+            appointmentId: appointment._id,
+            callLink
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.getAppointmentsByPatient = async (req, res) => {
+    try {
+        const { patientId } = req.params;
+
+        if (req.user.role === 'patient' && req.user.id !== patientId)
+            return res.status(403).json({ message: 'Forbidden: access denied' });
+
+        const appointments = await Appointment.find({ patientId });
+
+        if (!appointments.length)
+            return res.status(404).json({ message: 'No appointments found' });
+
+        const result = appointments.map((apt) => ({
+            appointmentId: apt._id,
+            doctorId: apt.doctorId,
+            date: apt.date,
+            time: apt.time,
+            status: apt.status,
+            callLink: generateCallLinkToken(apt, req.user)
+        }));
+
+        res.json(result);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.getAppointmentsByDoctor = async (req, res) => {
+    try {
+        const { doctorId } = req.params;
+
+        if (req.user.role === 'doctor' && req.user.id !== doctorId)
+            return res.status(403).json({ message: 'Forbidden: access to other doctors not allowed' });
+
+        const appointments = await Appointment.find({ doctorId }).populate('patientId', 'name email').sort({ date: 1, time: 1 });
+        if (!appointments.length) return res.status(404).json({ message: 'No appointments found' });
+
+        res.json(appointments);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.rescheduleAppointment = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { newDate, newTime } = req.body;
+
+        if (!newDate || !newTime)
+            return res.status(400).json({ message: 'Missing newDate or newTime' });
+
+        if (isNaN(Date.parse(newDate))) return res.status(400).json({ message: 'Invalid date' });
+        if (!/^\d{2}:\d{2}$/.test(newTime)) return res.status(400).json({ message: 'Invalid time format' });
+
+        const appointment = await Appointment.findById(appointmentId);
+        if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+
+        if (req.user.role === 'patient' && req.user.id !== appointment.patientId.toString())
+            return res.status(403).json({ message: 'Forbidden: cannot reschedule others\' appointments' });
+
+        const availability = await Availability.findOne({ doctorId: appointment.doctorId, date: newDate });
+        if (!availability) {
+            return res.status(409).json({ message: 'No availability for this doctor on the new date' });
+        }
+
+        const { startTime, endTime } = availability;
+        const availableSlots = getTimeSlots(startTime, endTime);
+
+        if (!availableSlots.includes(newTime)) {
+            return res.status(409).json({ message: 'New time is not within available slots' });
+        }
+
+        const conflict = await Appointment.findOne({
+            doctorId: appointment.doctorId,
+            date: newDate,
+            time: newTime,
+            status: { $ne: 'cancelled' },
+            _id: { $ne: appointmentId }
+        });
+        if (conflict) return res.status(409).json({ message: 'New time slot unavailable' });
+
+        appointment.date = newDate;
+        appointment.time = newTime;
+        await appointment.save();
+
+        const callLink = generateCallLinkToken(appointment, req.user);
+
+        res.json({ message: 'Appointment rescheduled', callLink });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.cancelAppointment = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const appointment = await Appointment.findById(appointmentId);
+        if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+
+        if (req.user.role === 'patient' && req.user.id !== appointment.patientId.toString())
+            return res.status(403).json({ message: 'Forbidden: cannot cancel others\' appointments' });
+
+        appointment.status = 'cancelled';
+        await appointment.save();
+
+        res.json({ message: 'Appointment cancelled' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.updateAppointmentStatus = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { status } = req.body;
+
+        if (!['confirmed', 'completed', 'cancelled'].includes(status))
+            return res.status(400).json({ message: 'Invalid status' });
+
+        const appointment = await Appointment.findById(appointmentId);
+        if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+
+        if (!['doctor', 'admin'].includes(req.user.role))
+            return res.status(403).json({ message: 'Forbidden: insufficient rights' });
+
+        appointment.status = status;
+        await appointment.save();
+
+        res.json({ message: 'Status updated' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.getCallLink = async (req, res) => {
+    try {
+        const { id: appointmentId } = req.params;
+        const appointment = await Appointment.findById(appointmentId);
+        if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+
+        const userIdStr = req.user.id;
+
+        const isPatient = appointment.patientId.toString() === userIdStr;
+        const isDoctor = appointment.doctorId.toString() === userIdStr;
+        if (!(isPatient || isDoctor || req.user.role === 'admin'))
+            return res.status(403).json({ message: 'Forbidden: unauthorized user' });
+
+        const callLink = generateCallLinkToken(appointment, req.user);
+        if (!callLink) return res.status(410).json({ message: 'Call link expired' });
+
+        res.json({ callLink });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
