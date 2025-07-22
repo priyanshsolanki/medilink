@@ -32,12 +32,12 @@ class NotificationService {
                 result = await twilioClient.messages.create({
                     body: notification.message,
                     from: process.env.TWILIO_PHONE_NUMBER,
-                    to: process.env.TEST_PHONE_NUMBER || '+1234567890', // Replace with dynamic user phone
+                    to: process.env.TEST_PHONE_NUMBER || '+1234567890',
                 });
             } else if (notification.deliveryMethod === 'email') {
                 result = await transporter.sendMail({
                     from: process.env.EMAIL_USER,
-                    to: process.env.TEST_EMAIL || 'user@example.com', // Replace with dynamic user email
+                    to: process.env.TEST_EMAIL || 'user@example.com',
                     subject: 'MediLink Notification',
                     text: notification.message,
                 });
