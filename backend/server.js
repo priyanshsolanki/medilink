@@ -5,9 +5,13 @@ const cors = require('cors');
 
 const passport = require('./config/passport');
 const session = require('express-session');
+const NotificationScheduler = require('./utils/notificationScheduler');
 
 const app = express();
-connectDB();
+connectDB().then(() => {
+    console.log('Connected to MongoDB');
+    NotificationScheduler.start(); // Start the notification scheduler
+});
 
 // --- CORS Setup (for React frontend to access cookies/sessions) ---
 app.use(cors({

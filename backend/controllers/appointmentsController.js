@@ -1,5 +1,7 @@
 const Appointment = require('../models/Appointment');
 const Availability = require('../models/Availability');
+const NotificationService = require('../utils/notificationService');
+const User = require('../models/User');
 const { generateCallLinkToken } = require('../utils/generateCallLink');
 
 function getTimeSlots(startTime, endTime) {
@@ -8,7 +10,7 @@ function getTimeSlots(startTime, endTime) {
     const end = new Date(`1970-01-01 ${endTime}`);
 
     while (currentTime < end) {
-        slots.push(currentTime.toTimeString().slice(0, 5)); // HH:MM format
+        slots.push(currentTime.toTimeString().slice(0, 5));
         currentTime.setMinutes(currentTime.getMinutes() + 30);
     }
     return slots;
@@ -32,7 +34,6 @@ exports.bookAppointment = async (req, res) => {
         if (isNaN(Date.parse(date))) return res.status(400).json({ message: 'Invalid date' });
         if (!/^\d{2}:\d{2}$/.test(time)) return res.status(400).json({ message: 'Invalid time format' });
 
-        // Fetch doctor's availability for the day
         const availability = await Availability.findOne({ doctorId, date });
         if (!availability) {
             return res.status(409).json({ message: 'No availability for this doctor on the selected date' });
@@ -41,12 +42,10 @@ exports.bookAppointment = async (req, res) => {
         const { startTime, endTime } = availability;
         const availableSlots = getTimeSlots(startTime, endTime);
 
-        // Check if the requested time is within available slots
         if (!availableSlots.includes(time)) {
             return res.status(409).json({ message: 'Selected time is not within available slots' });
         }
 
-        // Check for existing bookings
         const conflict = await Appointment.findOne({ doctorId, date, time, status: { $ne: 'cancelled' } });
         if (conflict) {
             return res.status(409).json({ message: 'Time slot already booked by another patient' });
@@ -54,6 +53,34 @@ exports.bookAppointment = async (req, res) => {
 
         const appointment = new Appointment({ patientId, doctorId, date, time, status: 'confirmed' });
         await appointment.save();
+
+        // Fetch user names directly from the database
+        const patient = await User.findById(patientId, 'name');
+        const doctor = await User.findById(doctorId, 'name');
+        if (!patient || !doctor) {
+            return res.status(404).json({ message: 'Patient or doctor not found' });
+        }
+        const patientName = patient.name;
+        const doctorName = doctor.name;
+
+        const appointmentDateTime = new Date(`${date}T${time}:00`);
+        const reminderTime = new Date(appointmentDateTime - 24 * 60 * 60 * 1000); // 24 hours before
+        await NotificationService.scheduleNotification(
+            patientId,
+            appointment._id,
+            'appointment',
+            `Reminder: Your appointment with Dr. ${doctorName} is scheduled for ${date} at ${time}.`,
+            'email',
+            reminderTime
+        );
+        await NotificationService.scheduleNotification(
+            doctorId,
+            appointment._id,
+            'appointment',
+            `Reminder: You have an appointment with ${patientName} on ${date} at ${time}.`,
+            'email',
+            reminderTime
+        );
 
         const callLink = generateCallLinkToken(appointment, req.user);
 
@@ -127,8 +154,9 @@ exports.rescheduleAppointment = async (req, res) => {
         const appointment = await Appointment.findById(appointmentId);
         if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
 
-        if (req.user.role === 'patient' && req.user.id !== appointment.patientId.toString())
+        if (req.user.role === 'patient' && req.user.id !== appointment.patientId.toString()) {
             return res.status(403).json({ message: 'Forbidden: cannot reschedule others\' appointments' });
+        }
 
         const availability = await Availability.findOne({ doctorId: appointment.doctorId, date: newDate });
         if (!availability) {
@@ -155,6 +183,33 @@ exports.rescheduleAppointment = async (req, res) => {
         appointment.time = newTime;
         await appointment.save();
 
+        const patient = await User.findById(appointment.patientId, 'name');
+        const doctor = await User.findById(appointment.doctorId, 'name');
+        if (!patient || !doctor) {
+            return res.status(404).json({ message: 'Patient or doctor not found' });
+        }
+        const patientName = patient.name;
+        const doctorName = doctor.name;
+
+        const newAppointmentDateTime = new Date(`${newDate}T${newTime}:00`);
+        const reminderTime = new Date(newAppointmentDateTime - 24 * 60 * 60 * 1000);
+        await NotificationService.scheduleNotification(
+            appointment.patientId,
+            appointment._id,
+            'reschedule',
+            `Update: Your appointment with Dr. ${doctorName} is now rescheduled to ${newDate} at ${newTime}.`,
+            'email',
+            reminderTime
+        );
+        await NotificationService.scheduleNotification(
+            appointment.doctorId,
+            appointment._id,
+            'reschedule',
+            `Update: Your appointment with ${patientName} is rescheduled to ${newDate} at ${newTime}.`,
+            'email',
+            reminderTime
+        );
+
         const callLink = generateCallLinkToken(appointment, req.user);
 
         res.json({ message: 'Appointment rescheduled', callLink });
@@ -166,12 +221,41 @@ exports.rescheduleAppointment = async (req, res) => {
 
 exports.cancelAppointment = async (req, res) => {
     try {
+        console.log(req.body);
         const { appointmentId } = req.params;
         const appointment = await Appointment.findById(appointmentId);
         if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
 
-        if (req.user.role === 'patient' && req.user.id !== appointment.patientId.toString())
+        console.log(appointment);
+
+        if (req.user.role === 'patient' && req.user.id !== appointment.patientId.toString()) {
             return res.status(403).json({ message: 'Forbidden: cannot cancel others\' appointments' });
+        }
+
+        const patient = await User.findById(appointment.patientId, 'name');
+        const doctor = await User.findById(appointment.doctorId, 'name');
+        if (!patient || !doctor) {
+            return res.status(404).json({ message: 'Patient or doctor not found' });
+        }
+        const patientName = patient.name;
+        const doctorName = doctor.name;
+
+        await NotificationService.scheduleNotification(
+            appointment.patientId,
+            appointment._id,
+            'cancel',
+            `Notice: Your appointment with Dr. ${doctorName} on ${appointment.date} at ${appointment.time} has been cancelled.`,
+            'email',
+            new Date()
+        );
+        await NotificationService.scheduleNotification(
+            appointment.doctorId,
+            appointment._id,
+            'cancel',
+            `Notice: Your appointment with ${patientName} on ${appointment.date} at ${appointment.time} has been cancelled.`,
+            'email',
+            new Date()
+        );
 
         appointment.status = 'cancelled';
         await appointment.save();
@@ -197,8 +281,34 @@ exports.updateAppointmentStatus = async (req, res) => {
         if (!['doctor', 'admin'].includes(req.user.role))
             return res.status(403).json({ message: 'Forbidden: insufficient rights' });
 
+        const oldStatus = appointment.status;
         appointment.status = status;
         await appointment.save();
+
+        const patient = await User.findById(appointment.patientId, 'name');
+        const doctor = await User.findById(appointment.doctorId, 'name');
+        if (!patient || !doctor) {
+            return res.status(404).json({ message: 'Patient or doctor not found' });
+        }
+        const patientName = patient.name;
+        const doctorName = doctor.name;
+
+        await NotificationService.scheduleNotification(
+            appointment.patientId,
+            appointment._id,
+            'status_update',
+            `Update: Your appointment with Dr. ${doctorName} on ${appointment.date} at ${appointment.time} is now ${status}.`,
+            'email',
+            new Date()
+        );
+        await NotificationService.scheduleNotification(
+            appointment.doctorId,
+            appointment._id,
+            'status_update',
+            `Update: Your appointment with ${patientName} on ${appointment.date} at ${appointment.time} is now ${status}.`,
+            'email',
+            new Date()
+        );
 
         res.json({ message: 'Status updated' });
     } catch (err) {
