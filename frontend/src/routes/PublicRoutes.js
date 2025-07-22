@@ -1,6 +1,6 @@
 import React from "react";
 import { Route, Routes } from "react-router-dom";
-<<<<<<< HEAD
+
 import DoctorAppointment from "../pages/DoctorAppointment";
 import { Dashboard } from "../pages/Dashboard";
 import Availability from "../pages/Availability";
@@ -14,7 +14,7 @@ import PharmacyLocator from "../pages/PharmacyLocator";
 import MedicalHistory from "../pages/MedicalHistory";
 import PatientProfile from "../pages/PatientProfile";
 
-=======
+
 import Home from "../pages/HomePage/Home";
 import LoginPage from "../pages/Auth/LoginPage";
 import PatientRegister from "../pages/Auth/PatientRegister";
@@ -22,7 +22,7 @@ import DoctorRegister from "../pages/Auth/DoctorRegister";
 import GoogleAuthSuccess from "../pages/Auth/GoogleAuthSuccess";
 import EmailVerification from "../pages/Auth/EmailVerification";
 import UnauthorizedPage from "../pages/Auth/UnauthorizedPage";
->>>>>>> ccb56068c232e839c325d120d4670dcf813fc123
+
 
 const PublicRoutes = () => {
   return (

@@ -5,7 +5,7 @@ import {
   Plus,
   Phone,
   Mail,
-  Calendar,
+  Calendar as CalendarIcon,
   MapPin,
   Edit,
   Trash2,
@@ -15,8 +15,10 @@ import {
   Users,
   Clock,
   FileText,
+  Menu,
   X,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const PatientDirectory = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,6 +28,7 @@ const PatientDirectory = () => {
   const [viewMode, setViewMode] = useState("grid");
   const [showPatientDetails, setShowPatientDetails] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({
     name: "",
     age: "",
@@ -36,6 +39,11 @@ const PatientDirectory = () => {
     status: "active",
     nextAppointment: "",
   });
+
+  // Calendar state
+  const [currentDate] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const [patients, setPatients] = useState([
     {
@@ -123,6 +131,31 @@ const PatientDirectory = () => {
     address: "",
     medicalHistory: "",
   });
+
+  // Calendar helper functions
+  const getDaysInMonth = (month, year) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (month, year) => {
+    return new Date(year, month, 1).getDay();
+  };
+
+  const generateCalendarDays = () => {
+    const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+    const firstDayOfMonth = getFirstDayOfMonth(currentMonth, currentYear);
+    const days = [];
+
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      days.push(null);
+    }
+
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(i);
+    }
+
+    return days;
+  };
 
   const filteredPatients = patients.filter((patient) => {
     const matchesSearch =
@@ -240,130 +273,231 @@ const PatientDirectory = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">
-              Patient Directory
-            </h1>
-            <p className="text-gray-600">
-              Manage your patient information and records
-            </p>
-          </div>
-          <button
-            onClick={() => setShowAddPatient(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Patient
-          </button>
+    <div className="flex flex-col min-h-screen bg-gray-50 lg:flex-row">
+      {/* Mobile sidebar toggle */}
+      <button
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md"
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+      >
+        {isSidebarOpen ? (
+          <X className="w-5 h-5 text-gray-600" />
+        ) : (
+          <Menu className="w-5 h-5 text-gray-600" />
+        )}
+      </button>
+
+      {/* Sidebar */}
+      <div
+        className={`${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } lg:translate-x-0 transform transition-transform duration-200 ease-in-out fixed lg:static inset-y-0 left-0 w-64 lg:w-80 bg-white border-b lg:border-r border-gray-200 p-4 lg:p-6 z-40 overflow-y-auto`}
+      >
+        <div className="mb-6 lg:mb-8">
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">
+            Patient Directory
+          </h1>
+          <p className="text-gray-600 text-sm">
+            Manage your patient information and records
+          </p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Total Patients
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {patients.length}
-                </p>
-              </div>
-              <Users className="w-8 h-8 text-blue-600" />
+        <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-6 lg:mb-8">
+          <div className="bg-blue-500 text-white p-3 lg:p-4 rounded-lg">
+            <div className="text-xs lg:text-sm font-medium">Total Patients</div>
+            <div className="text-2xl lg:text-3xl font-bold">
+              {patients.length}
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Active Patients
-                </p>
-                <p className="text-2xl font-bold text-green-600">
-                  {patients.filter((p) => p.status === "active").length}
-                </p>
-              </div>
-              <User className="w-8 h-8 text-green-600" />
+          <div className="bg-green-500 text-white p-3 lg:p-4 rounded-lg">
+            <div className="text-xs lg:text-sm font-medium">
+              Active Patients
             </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Upcoming Appointments
-                </p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {patients.filter((p) => p.nextAppointment).length}
-                </p>
-              </div>
-              <Calendar className="w-8 h-8 text-orange-600" />
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Total Visits
-                </p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {patients.reduce((sum, p) => sum + p.totalVisits, 0)}
-                </p>
-              </div>
-              <Clock className="w-8 h-8 text-purple-600" />
+            <div className="text-2xl lg:text-3xl font-bold">
+              {patients.filter((p) => p.status === "active").length}
             </div>
           </div>
         </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search patients by name, email, or phone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-              />
+        {/* Quick Actions */}
+        <div className="mb-6 lg:mb-8">
+          <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
+            Quick Actions
+          </h3>
+          <div className="space-y-2 lg:space-y-3">
+            <button
+              onClick={() => setShowAddPatient(true)}
+              className="w-full flex items-center px-3 py-2 text-sm lg:text-base text-left text-gray-700 hover:bg-gray-50 rounded-lg"
+            >
+              <span className="mr-2 lg:mr-3">➕</span>
+              Add Patient
+            </button>
+            <Link to="/doctor-appointment">
+              <button className="w-full flex items-center px-3 py-2 text-sm lg:text-base text-left text-gray-700 hover:bg-gray-50 rounded-lg">
+                <span className="mr-2 lg:mr-3">📅</span>
+                Schedule Appointment
+              </button>
+            </Link>
+            <Link to="/settings">
+              <button className="w-full flex items-center px-3 py-2 text-sm lg:text-base text-left text-gray-700 hover:bg-gray-50 rounded-lg">
+                <span className="mr-2 lg:mr-3">⚙️</span>
+                Settings
+              </button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Calendar */}
+        <div>
+          <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
+            Calendar
+          </h3>
+          <div className="bg-white border border-gray-200 rounded-lg p-3 lg:p-4">
+            <div className="flex items-center justify-between mb-3 lg:mb-4">
+              <h4 className="font-medium text-sm lg:text-base">
+                {new Date(currentYear, currentMonth).toLocaleString("default", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </h4>
+              <div className="flex space-x-1 lg:space-x-2">
+                <button
+                  className="p-1 hover:bg-gray-100 rounded"
+                  onClick={() => {
+                    const prevMonth =
+                      currentMonth === 0 ? 11 : currentMonth - 1;
+                    const prevYear =
+                      currentMonth === 0 ? currentYear - 1 : currentYear;
+                    setCurrentMonth(prevMonth);
+                    setCurrentYear(prevYear);
+                  }}
+                >
+                  ←
+                </button>
+                <button
+                  className="p-1 hover:bg-gray-100 rounded"
+                  onClick={() => {
+                    const nextMonth =
+                      currentMonth === 11 ? 0 : currentMonth + 1;
+                    const nextYear =
+                      currentMonth === 11 ? currentYear + 1 : currentYear;
+                    setCurrentMonth(nextMonth);
+                    setCurrentYear(nextYear);
+                  }}
+                >
+                  →
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <select
-                value={selectedFilter}
-                onChange={(e) => setSelectedFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all">All Patients</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-              <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                <Filter className="w-4 h-4 text-gray-600" />
+            <div className="grid grid-cols-7 gap-0.5 lg:gap-1 text-center text-xs lg:text-sm">
+              {["S", "M", "T", "W", "T", "F", "S"].map((day) => (
+                <div
+                  key={day}
+                  className="font-medium text-gray-500 py-1 lg:py-2"
+                >
+                  {day}
+                </div>
+              ))}
+              {generateCalendarDays().map((day, i) => {
+                const today = new Date();
+                const isToday =
+                  day === today.getDate() &&
+                  currentMonth === today.getMonth() &&
+                  currentYear === today.getFullYear();
+                const isCurrentMonth = day !== null;
+
+                return (
+                  <div
+                    key={i}
+                    className={`py-1 lg:py-2 cursor-pointer rounded ${
+                      isToday
+                        ? "bg-blue-500 text-white"
+                        : isCurrentMonth
+                        ? "hover:bg-blue-50"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {day || ""}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-4 sm:p-6 lg:p-8 pt-16 lg:pt-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 lg:mb-8 gap-4">
+          <div className="mb-4 sm:mb-0">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+              {currentDate.toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </h2>
+            <div className="flex space-x-2 sm:space-x-4 mt-2">
+              <button className="px-3 py-1 sm:px-4 sm:py-2 bg-blue-500 text-white rounded-lg text-xs sm:text-sm font-medium">
+                Day
+              </button>
+              <button className="px-3 py-1 sm:px-4 sm:py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-xs sm:text-sm font-medium">
+                Week
+              </button>
+              <button className="px-3 py-1 sm:px-4 sm:py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-xs sm:text-sm font-medium">
+                Month
               </button>
             </div>
+          </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 gap-2 sm:gap-3">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 sm:w-4 h-3 sm:h-4 bg-red-500 rounded-full"></div>
+              <span className="text-xs sm:text-sm text-gray-600">
+                {patients.filter((p) => p.nextAppointment).length}
+              </span>
+            </div>
+            <div className="relative w-full sm:w-auto">
+              <Search className="absolute left-2 sm:left-3 top-2 sm:top-2.5 w-3 sm:w-4 h-3 sm:h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search patients..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full sm:w-64 pl-8 sm:pl-10 pr-3 py-1 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              />
+            </div>
+            <button className="px-3 py-1 sm:px-4 sm:py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-xs sm:text-sm">
+              Filter
+            </button>
+            <button
+              onClick={() => setShowAddPatient(true)}
+              className="px-4 sm:px-6 py-1 sm:py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+            >
+              <Plus className="w-3 sm:w-4 h-3 sm:h-4" />
+              Add Patient
+            </button>
           </div>
         </div>
 
         {/* Patient List */}
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="p-6 border-b">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-4 sm:p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-medium text-gray-900">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                 Patients ({filteredPatients.length})
-              </h2>
-              <div className="flex items-center gap-2">
+              </h3>
+              <div className="flex items-center gap-1 sm:gap-2">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`p-2 rounded ${
+                  className={`p-1 sm:p-2 rounded ${
                     viewMode === "grid"
                       ? "bg-blue-100 text-blue-600"
                       : "text-gray-400 hover:text-gray-600"
                   }`}
                 >
-                  <div className="w-4 h-4 grid grid-cols-2 gap-0.5">
+                  <div className="w-3 sm:w-4 h-3 sm:h-4 grid grid-cols-2 gap-0.5">
                     <div className="bg-current rounded-sm"></div>
                     <div className="bg-current rounded-sm"></div>
                     <div className="bg-current rounded-sm"></div>
@@ -372,13 +506,13 @@ const PatientDirectory = () => {
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`p-2 rounded ${
+                  className={`p-1 sm:p-2 rounded ${
                     viewMode === "list"
                       ? "bg-blue-100 text-blue-600"
                       : "text-gray-400 hover:text-gray-600"
                   }`}
                 >
-                  <div className="w-4 h-4 flex flex-col gap-0.5">
+                  <div className="w-3 sm:w-4 h-3 sm:h-4 flex flex-col gap-0.5">
                     <div className="bg-current h-0.5 rounded"></div>
                     <div className="bg-current h-0.5 rounded"></div>
                     <div className="bg-current h-0.5 rounded"></div>
@@ -388,46 +522,46 @@ const PatientDirectory = () => {
             </div>
           </div>
 
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {viewMode === "grid" ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {filteredPatients.map((patient) => (
                   <div
                     key={patient.id}
-                    className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                    className="border border-gray-200 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow"
                   >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-xl">
+                    <div className="flex items-start justify-between mb-3 sm:mb-4">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="w-10 sm:w-12 h-10 sm:h-12 bg-blue-100 rounded-full flex items-center justify-center text-lg sm:text-xl">
                           {patient.avatar}
                         </div>
                         <div>
-                          <h3 className="font-medium text-gray-900">
+                          <h3 className="font-medium text-gray-900 text-sm sm:text-base">
                             {patient.name}
                           </h3>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-xs sm:text-sm text-gray-600">
                             Age {patient.age}
                           </p>
                         </div>
                       </div>
                       <div className="relative">
                         <button className="p-1 text-gray-400 hover:text-gray-600">
-                          <MoreVertical className="w-4 h-4" />
+                          <MoreVertical className="w-3 sm:w-4 h-3 sm:h-4" />
                         </button>
                       </div>
                     </div>
 
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Mail className="w-4 h-4" />
+                    <div className="space-y-1 sm:space-y-2 mb-3 sm:mb-4">
+                      <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                        <Mail className="w-3 sm:w-4 h-3 sm:h-4" />
                         <span className="truncate">{patient.email}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Phone className="w-4 h-4" />
+                      <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                        <Phone className="w-3 sm:w-4 h-3 sm:h-4" />
                         <span>{patient.phone}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Calendar className="w-4 h-4" />
+                      <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                        <CalendarIcon className="w-3 sm:w-4 h-3 sm:h-4" />
                         <span>Next: {formatDate(patient.nextAppointment)}</span>
                       </div>
                     </div>
@@ -440,24 +574,24 @@ const PatientDirectory = () => {
                       >
                         {patient.status}
                       </span>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 sm:gap-2">
                         <button
                           onClick={() => handleViewPatient(patient)}
                           className="p-1 text-blue-600 hover:bg-blue-50 rounded"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3 sm:w-4 h-3 sm:h-4" />
                         </button>
                         <button
                           onClick={() => handleEditPatient(patient)}
                           className="p-1 text-gray-600 hover:bg-gray-50 rounded"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-3 sm:w-4 h-3 sm:h-4" />
                         </button>
                         <button
                           onClick={() => deletePatient(patient.id)}
                           className="p-1 text-red-600 hover:bg-red-50 rounded"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3 sm:w-4 h-3 sm:h-4" />
                         </button>
                       </div>
                     </div>
@@ -465,29 +599,29 @@ const PatientDirectory = () => {
                 ))}
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 sm:space-y-3">
                 {filteredPatients.map((patient) => (
                   <div
                     key={patient.id}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <div className="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-0">
+                      <div className="w-8 sm:w-10 h-8 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center text-base sm:text-lg">
                         {patient.avatar}
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-900">
+                        <h3 className="font-medium text-gray-900 text-sm sm:text-base">
                           {patient.name}
                         </h3>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                           <span>Age {patient.age}</span>
-                          <span>{patient.email}</span>
+                          <span className="truncate">{patient.email}</span>
                           <span>{patient.phone}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right text-sm">
+                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
+                      <div className="text-left sm:text-right text-xs sm:text-sm">
                         <p className="text-gray-900">
                           Next: {formatDate(patient.nextAppointment)}
                         </p>
@@ -495,31 +629,31 @@ const PatientDirectory = () => {
                           {patient.totalVisits} visits
                         </p>
                       </div>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                          patient.status
-                        )}`}
-                      >
-                        {patient.status}
-                      </span>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                            patient.status
+                          )}`}
+                        >
+                          {patient.status}
+                        </span>
                         <button
                           onClick={() => handleViewPatient(patient)}
                           className="p-1 text-blue-600 hover:bg-blue-50 rounded"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3 sm:w-4 h-3 sm:h-4" />
                         </button>
                         <button
                           onClick={() => handleEditPatient(patient)}
                           className="p-1 text-gray-600 hover:bg-gray-50 rounded"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-3 sm:w-4 h-3 sm:h-4" />
                         </button>
                         <button
                           onClick={() => deletePatient(patient.id)}
                           className="p-1 text-red-600 hover:bg-red-50 rounded"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3 sm:w-4 h-3 sm:h-4" />
                         </button>
                       </div>
                     </div>
@@ -529,12 +663,12 @@ const PatientDirectory = () => {
             )}
 
             {filteredPatients.length === 0 && (
-              <div className="text-center py-12">
-                <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <div className="text-center py-8 sm:py-12">
+                <Users className="w-8 sm:w-12 h-8 sm:h-12 mx-auto mb-3 sm:mb-4 text-gray-300" />
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                   No patients found
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-gray-600 text-sm">
                   Try adjusting your search or filter criteria
                 </p>
               </div>
@@ -544,14 +678,32 @@ const PatientDirectory = () => {
 
         {/* Add Patient Modal */}
         {showAddPatient && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">
-                Add New Patient
-              </h2>
-              <div className="space-y-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+            <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h2 className="text-base sm:text-lg font-medium text-gray-900">
+                  Add New Patient
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowAddPatient(false);
+                    setNewPatient({
+                      name: "",
+                      age: "",
+                      email: "",
+                      phone: "",
+                      address: "",
+                      medicalHistory: "",
+                    });
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 sm:w-6 h-5 sm:h-6" />
+                </button>
+              </div>
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Full Name
                   </label>
                   <input
@@ -560,12 +712,12 @@ const PatientDirectory = () => {
                     onChange={(e) =>
                       setNewPatient({ ...newPatient, name: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="Enter patient name"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Age
                   </label>
                   <input
@@ -574,12 +726,12 @@ const PatientDirectory = () => {
                     onChange={(e) =>
                       setNewPatient({ ...newPatient, age: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="Enter age"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Email
                   </label>
                   <input
@@ -588,12 +740,12 @@ const PatientDirectory = () => {
                     onChange={(e) =>
                       setNewPatient({ ...newPatient, email: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="Enter email address"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Phone
                   </label>
                   <input
@@ -602,12 +754,12 @@ const PatientDirectory = () => {
                     onChange={(e) =>
                       setNewPatient({ ...newPatient, phone: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="+1 (555) 123-4567"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Address
                   </label>
                   <input
@@ -616,12 +768,12 @@ const PatientDirectory = () => {
                     onChange={(e) =>
                       setNewPatient({ ...newPatient, address: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="Enter address"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Medical History
                   </label>
                   <input
@@ -633,15 +785,15 @@ const PatientDirectory = () => {
                         medicalHistory: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="Enter conditions (comma separated)"
                   />
                 </div>
               </div>
-              <div className="flex items-center gap-3 mt-6">
+              <div className="flex items-center gap-2 sm:gap-3 mt-4 sm:mt-6">
                 <button
                   onClick={addPatient}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                  className="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-blue-700 text-sm"
                 >
                   Add Patient
                 </button>
@@ -657,7 +809,7 @@ const PatientDirectory = () => {
                       medicalHistory: "",
                     });
                   }}
-                  className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
+                  className="bg-gray-100 text-gray-700 px-4 sm:px-6 py-2 rounded-lg hover:bg-gray-200 text-sm"
                 >
                   Cancel
                 </button>
@@ -668,37 +820,37 @@ const PatientDirectory = () => {
 
         {/* Patient Details Modal */}
         {showPatientDetails && selectedPatient && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-200">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-lg sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-900">
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-900">
                     Patient Details
                   </h2>
                   <button
                     onClick={() => setShowPatientDetails(false)}
                     className="text-gray-400 hover:text-gray-600"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 sm:w-6 h-5 sm:h-6" />
                   </button>
                 </div>
               </div>
 
-              <div className="p-6">
-                <div className="flex items-start gap-6 mb-6">
-                  <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-3xl">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-start gap-4 sm:gap-6 mb-4 sm:mb-6">
+                  <div className="w-12 sm:w-16 h-12 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center text-xl sm:text-2xl">
                     {selectedPatient.avatar}
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900">
                       {selectedPatient.name}
                     </h3>
-                    <div className="flex items-center gap-4 mt-2">
-                      <span className="text-gray-600">
+                    <div className="flex items-center gap-3 sm:gap-4 mt-2">
+                      <span className="text-gray-600 text-sm sm:text-base">
                         Age: {selectedPatient.age}
                       </span>
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                        className={`px-2 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(
                           selectedPatient.status
                         )}`}
                       >
@@ -708,27 +860,27 @@ const PatientDirectory = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="space-y-3 sm:space-y-4">
                     <div>
-                      <h4 className="text-sm font-medium text-gray-500 mb-2">
+                      <h4 className="text-xs sm:text-sm font-medium text-gray-500 mb-2">
                         Contact Information
                       </h4>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <Mail className="w-4 h-4 text-gray-400" />
+                      <div className="space-y-2 sm:space-y-3">
+                        <div className="flex items-center gap-2 sm:gap-3 text-sm">
+                          <Mail className="w-3 sm:w-4 h-3 sm:h-4 text-gray-400" />
                           <span className="text-gray-900">
                             {selectedPatient.email}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <Phone className="w-4 h-4 text-gray-400" />
+                        <div className="flex items-center gap-2 sm:gap-3 text-sm">
+                          <Phone className="w-3 sm:w-4 h-3 sm:h-4 text-gray-400" />
                           <span className="text-gray-900">
                             {selectedPatient.phone}
                           </span>
                         </div>
-                        <div className="flex items-start gap-3">
-                          <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
+                        <div className="flex items-start gap-2 sm:gap-3 text-sm">
+                          <MapPin className="w-3 sm:w-4 h-3 sm:h-4 text-gray-400 mt-0.5" />
                           <span className="text-gray-900">
                             {selectedPatient.address}
                           </span>
@@ -737,25 +889,25 @@ const PatientDirectory = () => {
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-medium text-gray-500 mb-2">
+                      <h4 className="text-xs sm:text-sm font-medium text-gray-500 mb-2">
                         Appointment History
                       </h4>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <Calendar className="w-4 h-4 text-gray-400" />
+                      <div className="space-y-2 sm:space-y-3">
+                        <div className="flex items-center gap-2 sm:gap-3 text-sm">
+                          <CalendarIcon className="w-3 sm:w-4 h-3 sm:h-4 text-gray-400" />
                           <span className="text-gray-900">
                             Last Visit: {formatDate(selectedPatient.lastVisit)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <Calendar className="w-4 h-4 text-gray-400" />
+                        <div className="flex items-center gap-2 sm:gap-3 text-sm">
+                          <CalendarIcon className="w-3 sm:w-4 h-3 sm:h-4 text-gray-400" />
                           <span className="text-gray-900">
                             Next Appointment:{" "}
                             {formatDate(selectedPatient.nextAppointment)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <Clock className="w-4 h-4 text-gray-400" />
+                        <div className="flex items-center gap-2 sm:gap-3 text-sm">
+                          <Clock className="w-3 sm:w-4 h-3 sm:h-4 text-gray-400" />
                           <span className="text-gray-900">
                             Total Visits: {selectedPatient.totalVisits}
                           </span>
@@ -765,14 +917,17 @@ const PatientDirectory = () => {
                   </div>
 
                   <div>
-                    <h4 className="text-sm font-medium text-gray-500 mb-2">
+                    <h4 className="text-xs sm:text-sm font-medium text-gray-500 mb-2">
                       Medical History
                     </h4>
                     {selectedPatient.medicalHistory.length > 0 ? (
                       <ul className="space-y-2">
                         {selectedPatient.medicalHistory.map(
                           (condition, index) => (
-                            <li key={index} className="flex items-center gap-2">
+                            <li
+                              key={index}
+                              className="flex items-center gap-2 text-sm"
+                            >
                               <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
                               <span className="text-gray-900">{condition}</span>
                             </li>
@@ -780,25 +935,25 @@ const PatientDirectory = () => {
                         )}
                       </ul>
                     ) : (
-                      <p className="text-gray-500">
+                      <p className="text-gray-500 text-sm">
                         No medical history recorded
                       </p>
                     )}
 
-                    <h4 className="text-sm font-medium text-gray-500 mt-6 mb-2">
+                    <h4 className="text-xs sm:text-sm font-medium text-gray-500 mt-4 sm:mt-6 mb-2">
                       Patient Since
                     </h4>
-                    <p className="text-gray-900">
+                    <p className="text-gray-900 text-sm">
                       {formatDate(selectedPatient.joinDate)}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-6 border-t border-gray-200 flex justify-end">
+              <div className="p-4 sm:p-6 border-t border-gray-200 flex justify-end">
                 <button
                   onClick={() => setShowPatientDetails(false)}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                 >
                   Close
                 </button>
@@ -809,25 +964,25 @@ const PatientDirectory = () => {
 
         {/* Edit Patient Modal */}
         {isEditing && selectedPatient && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-200">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-900">
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-900">
                     Edit Patient
                   </h2>
                   <button
                     onClick={() => setIsEditing(false)}
                     className="text-gray-400 hover:text-gray-600"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 sm:w-6 h-5 sm:h-6" />
                   </button>
                 </div>
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Full Name
                   </label>
                   <input
@@ -835,13 +990,13 @@ const PatientDirectory = () => {
                     name="name"
                     value={editFormData.name}
                     onChange={handleEditInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                       Age
                     </label>
                     <input
@@ -849,18 +1004,18 @@ const PatientDirectory = () => {
                       name="age"
                       value={editFormData.age}
                       onChange={handleEditInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                       Status
                     </label>
                     <select
                       name="status"
                       value={editFormData.status}
                       onChange={handleEditInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
@@ -869,7 +1024,7 @@ const PatientDirectory = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Email
                   </label>
                   <input
@@ -877,12 +1032,12 @@ const PatientDirectory = () => {
                     name="email"
                     value={editFormData.email}
                     onChange={handleEditInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Phone
                   </label>
                   <input
@@ -890,12 +1045,12 @@ const PatientDirectory = () => {
                     name="phone"
                     value={editFormData.phone}
                     onChange={handleEditInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Address
                   </label>
                   <input
@@ -903,12 +1058,12 @@ const PatientDirectory = () => {
                     name="address"
                     value={editFormData.address}
                     onChange={handleEditInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Next Appointment
                   </label>
                   <input
@@ -916,12 +1071,12 @@ const PatientDirectory = () => {
                     name="nextAppointment"
                     value={editFormData.nextAppointment}
                     onChange={handleEditInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Medical History
                   </label>
                   <textarea
@@ -929,22 +1084,22 @@ const PatientDirectory = () => {
                     value={editFormData.medicalHistory}
                     onChange={handleEditInputChange}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="Enter conditions separated by commas"
                   />
                 </div>
               </div>
 
-              <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <div className="p-4 sm:p-6 border-t border-gray-200 flex justify-end gap-2 sm:gap-3">
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                  className="px-4 sm:px-6 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={updatePatient}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                 >
                   Save Changes
                 </button>

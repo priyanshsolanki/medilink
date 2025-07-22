@@ -161,5 +161,4 @@ const PharmacyLocator = () => {
     </div>
   );
 };
-
 export default PharmacyLocator;
