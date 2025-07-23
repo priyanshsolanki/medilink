@@ -26,7 +26,6 @@ export default function MediLinkLogin() {
   const [loading, setLoading] = useState(false);
   const [otp, setOtp] = useState('');
   const { setVerifiedAuthUser } = useAuth();
-
   const isPatient = loginType === 'patient';
   const primaryColor = isPatient ? 'blue' : 'green';
   const icon = isPatient ? UserCheck : Stethoscope;

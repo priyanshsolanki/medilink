@@ -5,6 +5,7 @@ const cors = require('cors');
 
 const passport = require('./config/passport');
 const session = require('express-session');
+const recordsRoutes = require('./routes/records');
 
 const app = express();
 connectDB();
@@ -35,6 +36,7 @@ app.use(passport.session());
 // --- Your Routes ---
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api', require('./routes/records'));
 
 const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
