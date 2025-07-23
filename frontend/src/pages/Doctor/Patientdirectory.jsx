@@ -379,7 +379,12 @@ const PatientDirectory = () => {
             {viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {filteredPatients.map((patient) => (
-                  <div
+                  <Link
+                      to={`/doctor/chat/${patient.id}`}
+                      key={patient.id}
+                      className="block border border-gray-200 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow"
+                    >
+                      <div
                     key={patient.id}
                     className="border border-gray-200 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow"
                   >
@@ -449,6 +454,7 @@ const PatientDirectory = () => {
                       </div>
                     </div>
                   </div>
+                  </Link>
                 ))}
               </div>
             ) : (
