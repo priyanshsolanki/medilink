@@ -8,11 +8,11 @@ const notificationSchema = new mongoose.Schema({
     },
     relatedId: {
         type: mongoose.Schema.Types.ObjectId,
-        required: true, // e.g., Appointment._id
+        required: true,
     },
     type: {
         type: String,
-        enum: ['appointment', 'reschedule', 'cancel', 'status_update'],
+        enum: ['appointment', 'reschedule', 'cancel', 'status_update', 'message'],
         required: true,
     },
     message: {

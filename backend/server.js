@@ -9,7 +9,6 @@ const NotificationScheduler = require('./utils/notificationScheduler');
 
 const app = express();
 connectDB().then(() => {
-    console.log('Connected to MongoDB');
     NotificationScheduler.start(); // Start the notification scheduler
 });
 
