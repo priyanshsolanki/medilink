@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { User, Settings } from "lucide-react";
-import Patientsidebar from "../components/Patientsidebar";
+import Sidebar from "../../components/Sidebar";
 
 const PatientProfile = () => {
   const [profileData, setProfileData] = useState({
@@ -52,9 +52,11 @@ const PatientProfile = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Patientsidebar />
+      <Sidebar />
 
-      <div className="flex-1 p-6">
+      <main className="pt-20 lg:pt-0 flex-1 ">
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto p-4 sm:p-6">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -349,6 +351,7 @@ const PatientProfile = () => {
           </div>
         </div>
       </div>
+      </main>
     </div>
   );
 };

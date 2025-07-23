@@ -10,4 +10,16 @@ router.get('/', auth, role('admin'), async (req, res) => {
   res.json(users);
 });
 
+router.get('/doctors', auth, async (req, res) => {
+  try {
+    const doctors = await User
+      .find({ role: 'doctor' })
+      .select('name specialty rating experience location image fee')
+      .lean();
+    res.json(doctors);
+  } catch (error) {
+    console.error('Error fetching doctors', error);
+    res.status(500).json({ message: 'Error fetching doctors' });
+  }
+});
 module.exports = router;

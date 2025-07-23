@@ -102,18 +102,47 @@ exports.getAppointmentsByPatient = async (req, res) => {
         if (req.user.role === 'patient' && req.user.id !== patientId)
             return res.status(403).json({ message: 'Forbidden: access denied' });
 
-        const appointments = await Appointment.find({ patientId });
+        // 1. Fetch raw appointments
+        const appointments = await Appointment.find({ patientId }).lean();
+        if (!appointments.length) {
+        return res.status(404).json({ message: 'No appointments found' });
+        }
 
-        if (!appointments.length)
-            return res.status(404).json({ message: 'No appointments found' });
+        // 2. Gather all doctorIds and patientIds
+        const userIds = [
+        ...new Set(
+            appointments.flatMap(apt => [apt.doctorId.toString(), apt.patientId.toString()])
+        )
+        ];
 
-        const result = appointments.map((apt) => ({
-            appointmentId: apt._id,
-            doctorId: apt.doctorId,
-            date: apt.date,
-            time: apt.time,
-            status: apt.status,
-            callLink: generateCallLinkToken(apt, req.user)
+        // 3. Bulk fetch name & specialty for doctors, name for patients
+        const users = await User.find({ _id: { $in: userIds } })
+        .select('name role specialty')
+        .lean();
+
+        // 4. Build lookup maps
+        const nameMap = {};
+        const specialtyMap = {};
+        users.forEach(u => {
+        nameMap[u._id.toString()] = u.name;
+        if (u.role === 'doctor') {
+            specialtyMap[u._id.toString()] = u.specialty;
+        }
+        });
+
+        // 5. Compose final result
+        const result = appointments.map(apt => ({
+        appointmentId: apt._id,
+        doctorId:     apt.doctorId,
+        doctorName:   nameMap[apt.doctorId.toString()] || null,
+        doctorSpecialty: specialtyMap[apt.doctorId.toString()] || null,
+        patientId:    apt.patientId,
+        patientName:  nameMap[apt.patientId.toString()] || null,
+        date:         apt.date,
+        time:         apt.time,
+        status:       apt.status,
+        callLink:     generateCallLinkToken(apt, req.user),
+        type:'Video Consultation' // todo add this field
         }));
 
         res.json(result);

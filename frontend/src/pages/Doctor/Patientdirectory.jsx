@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import Sidebar from "../../components/Sidebar";
 
 const PatientDirectory = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -274,160 +275,12 @@ const PatientDirectory = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 lg:flex-row">
-      {/* Mobile sidebar toggle */}
-      <button
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md"
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-      >
-        {isSidebarOpen ? (
-          <X className="w-5 h-5 text-gray-600" />
-        ) : (
-          <Menu className="w-5 h-5 text-gray-600" />
-        )}
-      </button>
-
-      {/* Sidebar */}
-      <div
-        className={`${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 transform transition-transform duration-200 ease-in-out fixed lg:static inset-y-0 left-0 w-64 lg:w-80 bg-white border-b lg:border-r border-gray-200 p-4 lg:p-6 z-40 overflow-y-auto`}
-      >
-        <div className="mb-6 lg:mb-8">
-          <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">
-            Patient Directory
-          </h1>
-          <p className="text-gray-600 text-sm">
-            Manage your patient information and records
-          </p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-6 lg:mb-8">
-          <div className="bg-blue-500 text-white p-3 lg:p-4 rounded-lg">
-            <div className="text-xs lg:text-sm font-medium">Total Patients</div>
-            <div className="text-2xl lg:text-3xl font-bold">
-              {patients.length}
-            </div>
-          </div>
-          <div className="bg-green-500 text-white p-3 lg:p-4 rounded-lg">
-            <div className="text-xs lg:text-sm font-medium">
-              Active Patients
-            </div>
-            <div className="text-2xl lg:text-3xl font-bold">
-              {patients.filter((p) => p.status === "active").length}
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mb-6 lg:mb-8">
-          <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
-            Quick Actions
-          </h3>
-          <div className="space-y-2 lg:space-y-3">
-            <button
-              onClick={() => setShowAddPatient(true)}
-              className="w-full flex items-center px-3 py-2 text-sm lg:text-base text-left text-gray-700 hover:bg-gray-50 rounded-lg"
-            >
-              <span className="mr-2 lg:mr-3">➕</span>
-              Add Patient
-            </button>
-            <Link to="/doctor-appointment">
-              <button className="w-full flex items-center px-3 py-2 text-sm lg:text-base text-left text-gray-700 hover:bg-gray-50 rounded-lg">
-                <span className="mr-2 lg:mr-3">📅</span>
-                Schedule Appointment
-              </button>
-            </Link>
-            <Link to="/settings">
-              <button className="w-full flex items-center px-3 py-2 text-sm lg:text-base text-left text-gray-700 hover:bg-gray-50 rounded-lg">
-                <span className="mr-2 lg:mr-3">⚙️</span>
-                Settings
-              </button>
-            </Link>
-          </div>
-        </div>
-
-        {/* Calendar */}
-        <div>
-          <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
-            Calendar
-          </h3>
-          <div className="bg-white border border-gray-200 rounded-lg p-3 lg:p-4">
-            <div className="flex items-center justify-between mb-3 lg:mb-4">
-              <h4 className="font-medium text-sm lg:text-base">
-                {new Date(currentYear, currentMonth).toLocaleString("default", {
-                  month: "long",
-                  year: "numeric",
-                })}
-              </h4>
-              <div className="flex space-x-1 lg:space-x-2">
-                <button
-                  className="p-1 hover:bg-gray-100 rounded"
-                  onClick={() => {
-                    const prevMonth =
-                      currentMonth === 0 ? 11 : currentMonth - 1;
-                    const prevYear =
-                      currentMonth === 0 ? currentYear - 1 : currentYear;
-                    setCurrentMonth(prevMonth);
-                    setCurrentYear(prevYear);
-                  }}
-                >
-                  ←
-                </button>
-                <button
-                  className="p-1 hover:bg-gray-100 rounded"
-                  onClick={() => {
-                    const nextMonth =
-                      currentMonth === 11 ? 0 : currentMonth + 1;
-                    const nextYear =
-                      currentMonth === 11 ? currentYear + 1 : currentYear;
-                    setCurrentMonth(nextMonth);
-                    setCurrentYear(nextYear);
-                  }}
-                >
-                  →
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-7 gap-0.5 lg:gap-1 text-center text-xs lg:text-sm">
-              {["S", "M", "T", "W", "T", "F", "S"].map((day) => (
-                <div
-                  key={day}
-                  className="font-medium text-gray-500 py-1 lg:py-2"
-                >
-                  {day}
-                </div>
-              ))}
-              {generateCalendarDays().map((day, i) => {
-                const today = new Date();
-                const isToday =
-                  day === today.getDate() &&
-                  currentMonth === today.getMonth() &&
-                  currentYear === today.getFullYear();
-                const isCurrentMonth = day !== null;
-
-                return (
-                  <div
-                    key={i}
-                    className={`py-1 lg:py-2 cursor-pointer rounded ${
-                      isToday
-                        ? "bg-blue-500 text-white"
-                        : isCurrentMonth
-                        ? "hover:bg-blue-50"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    {day || ""}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
+     <Sidebar/>
+     <main className="pt-20 lg:pt-0 flex-1 ">
       {/* Main Content */}
-      <div className="flex-1 p-4 sm:p-6 lg:p-8 pt-16 lg:pt-8">
+      {/* <div className="p-4 sm:p-6 lg:p-8 pt-16 lg:pt-8"> */}
+      <div className="max-w-6xl mx-auto p-4 sm:p-6">
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 lg:mb-8 gap-4">
           <div className="mb-4 sm:mb-0">
@@ -1108,6 +961,7 @@ const PatientDirectory = () => {
           </div>
         )}
       </div>
+      </main>
     </div>
   );
 };

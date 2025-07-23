@@ -11,6 +11,7 @@ import {
   Menu,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import Sidebar from "../../components/Sidebar";
 
 const SetAvailability = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -110,241 +111,10 @@ const SetAvailability = () => {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
-      {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between p-4 bg-white border-b border-gray-200">
-        <button
-          onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-          className="p-2 rounded-md text-gray-700 hover:bg-gray-100"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-        <h1 className="text-xl font-semibold text-gray-900">
-          Set Availability
-        </h1>
-        <div className="w-8"></div> {/* Spacer for alignment */}
-      </div>
-
-      {/* Sidebar - Mobile Overlay */}
-      <div
-        className={`fixed inset-0 z-40 md:hidden transition-transform duration-300 ease-in-out ${
-          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div
-          className="fixed inset-0 bg-gray-600 bg-opacity-75"
-          onClick={() => setMobileSidebarOpen(false)}
-        ></div>
-        <div className="relative flex flex-col w-72 max-w-xs h-full bg-white">
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="flex items-center justify-between mb-8">
-              <h1 className="text-2xl font-bold text-gray-900">
-                Set Availability
-              </h1>
-              <button
-                onClick={() => setMobileSidebarOpen(false)}
-                className="md:hidden p-2 rounded-md hover:bg-gray-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-3 mb-8">
-              <div className="bg-blue-500 text-white rounded-lg py-3 px-4 text-center shadow-sm">
-                <div className="text-sm font-medium">Today's Appointments</div>
-                <div className="text-2xl font-bold">4</div>
-              </div>
-              <div className="bg-green-500 text-white rounded-lg py-3 px-4 text-center shadow-sm">
-                <div className="text-sm font-medium">Completed</div>
-                <div className="text-2xl font-bold">8</div>
-              </div>
-            </div>
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Quick Actions
-              </h3>
-              <div className="space-y-3">
-                <Link
-                  to="/availability"
-                  onClick={() => setMobileSidebarOpen(false)}
-                >
-                  <button className="w-full flex items-center px-4 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-lg">
-                    <span className="mr-3">📅</span>
-                    Set Availability
-                  </button>
-                </Link>
-                <Link
-                  to="/patient-directory"
-                  onClick={() => setMobileSidebarOpen(false)}
-                >
-                  <button className="w-full flex items-center px-4 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-lg">
-                    <span className="mr-3">👥</span>
-                    Patient Directory
-                  </button>
-                </Link>
-                <Link
-                  to="/analytics"
-                  onClick={() => setMobileSidebarOpen(false)}
-                >
-                  <button className="w-full flex items-center px-4 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-lg">
-                    <span className="mr-3">📊</span>
-                    Analytics
-                  </button>
-                </Link>
-                <Link
-                  to="/settings"
-                  onClick={() => setMobileSidebarOpen(false)}
-                >
-                  <button className="w-full flex items-center px-4 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-lg">
-                    <span className="mr-3">⚙️</span>
-                    Settings
-                  </button>
-                </Link>
-              </div>
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold mb-2">Calendar</h2>
-              <div className="text-center mb-2 font-medium">
-                {currentMonth} {currentYear}
-              </div>
-              <div className="grid grid-cols-7 gap-1 text-xs text-center mb-1">
-                {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                  <div key={i}>{d}</div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-1 text-xs text-center">
-                {calendarDays.map((day, i) => (
-                  <div
-                    key={i}
-                    className={`py-1 w-6 h-6 flex items-center justify-center rounded-full
-                    ${day === null ? "invisible" : ""}
-                    ${
-                      day === currentDay
-                        ? "font-bold text-white bg-blue-600"
-                        : ""
-                    }
-                    ${
-                      day !== currentDay
-                        ? "text-gray-700 hover:bg-gray-200"
-                        : ""
-                    }`}
-                  >
-                    {day}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="pt-4 border-t border-gray-200 p-6">
-            <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                <span className="text-blue-600 font-medium">JD</span>
-              </div>
-              <div className="flex-1">
-                <div className="text-sm font-medium">John Doe</div>
-                <div className="text-xs text-gray-500">Admin</div>
-              </div>
-              <ChevronDown className="w-4 h-4 text-gray-500" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Sidebar - Desktop */}
-      <div className="hidden md:flex md:flex-shrink-0 w-72 bg-white border-r border-gray-200 p-6 flex-col justify-between">
-        <div>
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Set Availability
-            </h1>
-            <p className="text-gray-600 text-sm">
-              Manage your appointments and availability
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 mb-8">
-            <div className="bg-blue-500 text-white rounded-lg py-3 px-4 text-center shadow-sm">
-              <div className="text-sm font-medium">Today's Appointments</div>
-              <div className="text-2xl font-bold">4</div>
-            </div>
-            <div className="bg-green-500 text-white rounded-lg py-3 px-4 text-center shadow-sm">
-              <div className="text-sm font-medium">Completed</div>
-              <div className="text-2xl font-bold">8</div>
-            </div>
-          </div>
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Quick Actions
-            </h3>
-            <div className="space-y-3">
-              <Link to="/availability">
-                <button className="w-full flex items-center px-4 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-lg">
-                  <span className="mr-3">📅</span>
-                  Set Availability
-                </button>
-              </Link>
-              <Link to="/patient-directory">
-                <button className="w-full flex items-center px-4 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-lg">
-                  <span className="mr-3">👥</span>
-                  Patient Directory
-                </button>
-              </Link>
-              <Link to="/analytics">
-                <button className="w-full flex items-center px-4 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-lg">
-                  <span className="mr-3">📊</span>
-                  Analytics
-                </button>
-              </Link>
-              <Link to="/settings">
-                <button className="w-full flex items-center px-4 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-lg">
-                  <span className="mr-3">⚙️</span>
-                  Settings
-                </button>
-              </Link>
-            </div>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold mb-2">Calendar</h2>
-            <div className="text-center mb-2 font-medium">
-              {currentMonth} {currentYear}
-            </div>
-            <div className="grid grid-cols-7 gap-1 text-xs text-center mb-1">
-              {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                <div key={i}>{d}</div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-1 text-xs text-center">
-              {calendarDays.map((day, i) => (
-                <div
-                  key={i}
-                  className={`py-1 w-6 h-6 flex items-center justify-center rounded-full
-                  ${day === null ? "invisible" : ""}
-                  ${
-                    day === currentDay ? "font-bold text-white bg-blue-600" : ""
-                  }
-                  ${
-                    day !== currentDay ? "text-gray-700 hover:bg-gray-200" : ""
-                  }`}
-                >
-                  {day}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="pt-4 border-t border-gray-200">
-          <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-              <span className="text-blue-600 font-medium">JD</span>
-            </div>
-            <div className="flex-1">
-              <div className="text-sm font-medium">John Doe</div>
-              <div className="text-xs text-gray-500">Admin</div>
-            </div>
-            <ChevronDown className="w-4 h-4 text-gray-500" />
-          </div>
-        </div>
-      </div>
-
+     <Sidebar/>
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto bg-gray-50">
+      <main className="pt-20 lg:pt-0 flex-1 ">
+      {/* Main Content */}
         <div className="max-w-6xl mx-auto p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8">
             <div className="mb-4 sm:mb-0">
@@ -614,8 +384,8 @@ const SetAvailability = () => {
               </div>
             </div>
           </div>
-        </div>
       </div>
+      </main>
     </div>
   );
 };

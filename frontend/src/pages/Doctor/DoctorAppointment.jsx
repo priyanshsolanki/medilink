@@ -1,6 +1,39 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import * as Yup from "yup";
+import Sidebar from "../../components/Sidebar";
+import appointmentService from "../../api/appointmentService";
+import { useAuth } from "../../context/AuthContext";
+
+// Validation schema using Yup
+const appointmentValidationSchema = Yup.object({
+  name: Yup.string()
+    .required("Patient name is required")
+    .min(2, "Name must be at least 2 characters")
+    .max(50, "Name must be less than 50 characters")
+    .matches(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
+  age: Yup.number()
+    .required("Age is required")
+    .min(1, "Age must be at least 1")
+    .max(120, "Age must be less than 120")
+    .integer("Age must be a whole number"),
+  time: Yup.string()
+    .required("Time is required"),
+  duration: Yup.number()
+    .required("Duration is required")
+    .min(15, "Duration must be at least 15 minutes")
+    .max(180, "Duration cannot exceed 180 minutes"),
+  type: Yup.string()
+    .required("Consultation type is required")
+    .oneOf(["Video Consultation", "Phone Consultation", "In-Person"], "Invalid consultation type"),
+  status: Yup.string()
+    .required("Status is required")
+    .oneOf(["Pending", "Confirmed", "Scheduled"], "Invalid status"),
+  description: Yup.string()
+    .max(500, "Description must be less than 500 characters")
+});
 
 const ScheduleManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -10,8 +43,7 @@ const ScheduleManagement = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
+  const {authUser} = useAuth();
   const [appointments, setAppointments] = useState([
     {
       id: 1,
@@ -68,15 +100,15 @@ const ScheduleManagement = () => {
     },
   ]);
 
-  const [formData, setFormData] = useState({
+  const initialFormValues = {
     name: "",
     age: "",
     time: "",
-    duration: "30",
+    duration: 30,
     type: "Video Consultation",
     description: "",
     status: "Pending",
-  });
+  };
 
   const timeSlots = [
     { time: "08:00", available: true },
@@ -100,6 +132,13 @@ const ScheduleManagement = () => {
     { time: "17:00", available: true },
     { time: "17:30", available: true },
   ];
+// fetch existing appointments on mount
+  useEffect(() => {
+    appointmentService
+      .getAppointmentsByDoctor(authUser?.id)
+      .then((data) => setAppointments(data))
+      .catch(() => {});
+  }, []);
 
   // Helper functions for calendar
   const getDaysInMonth = (month, year) => {
@@ -124,14 +163,6 @@ const ScheduleManagement = () => {
     }
 
     return days;
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
   };
 
   const getInitials = (name) => {
@@ -165,40 +196,69 @@ const ScheduleManagement = () => {
     ];
     return colors[index % colors.length];
   };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.name || !formData.age || !formData.time) {
-      alert("Please fill in all required fields");
-      return;
+  const handleFormSubmit = async (values, { setSubmitting, resetForm }) => {
+    try {
+      const payload = {
+        name: values.name,
+        age: values.age,
+        time: values.time,
+        duration: values.duration,
+        type: values.type,
+        description: values.description,
+        status: values.status,
+      };
+      const created = await appointmentService.bookAppointment(payload);
+      // append new appointment
+      setAppointments((prev) => [...prev, created]);
+      resetForm();
+      setIsModalOpen(false);
+    } catch (err) {
+      // error toast shown by service
+    } finally {
+      setSubmitting(false);
     }
-
-    const newAppointment = {
-      id: appointments.length + 1,
-      name: formData.name,
-      age: parseInt(formData.age),
-      time: formData.time,
-      duration: `${formData.duration} min`,
-      type: formData.type,
-      description: formData.description,
-      status: formData.status,
-      initials: getInitials(formData.name),
-      bgColor: getBgColor(appointments.length),
-      textColor: getTextColor(appointments.length),
-    };
-
-    setAppointments((prev) => [...prev, newAppointment]);
-    setFormData({
-      name: "",
-      age: "",
-      time: "",
-      duration: "30",
-      type: "Video Consultation",
-      description: "",
-      status: "Pending",
-    });
-    setIsModalOpen(false);
   };
+
+  // handle delete via API
+  const handleDeleteAppointment = async () => {
+    try {
+      await appointmentService.cancelAppointment(selectedAppointment.id);
+      setAppointments((prev) => prev.filter((app) => app.id !== selectedAppointment.id));
+      setIsDeleteModalOpen(false);
+      setSelectedAppointment(null);
+    } catch {
+      // error toast
+    }
+  };
+
+  // const handleFormSubmit = (values, { setSubmitting, resetForm }) => {
+  //   // Check if the selected time slot is still available
+  //   const selectedTimeSlot = timeSlots.find(slot => slot.time === values.time);
+  //   if (!selectedTimeSlot || !selectedTimeSlot.available) {
+  //     alert("Selected time slot is no longer available. Please choose another time.");
+  //     setSubmitting(false);
+  //     return;
+  //   }
+
+  //   const newAppointment = {
+  //     id: appointments.length + 1,
+  //     name: values.name,
+  //     age: parseInt(values.age),
+  //     time: values.time,
+  //     duration: `${values.duration} min`,
+  //     type: values.type,
+  //     description: values.description,
+  //     status: values.status,
+  //     initials: getInitials(values.name),
+  //     bgColor: getBgColor(appointments.length),
+  //     textColor: getTextColor(appointments.length),
+  //   };
+
+  //   setAppointments((prev) => [...prev, newAppointment]);
+  //   resetForm();
+  //   setIsModalOpen(false);
+  //   setSubmitting(false);
+  // };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -236,13 +296,54 @@ const ScheduleManagement = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const handleDeleteAppointment = () => {
-    setAppointments(
-      appointments.filter((app) => app.id !== selectedAppointment.id)
-    );
-    setIsDeleteModalOpen(false);
-    setSelectedAppointment(null);
-  };
+  // const handleDeleteAppointment = () => {
+  //   setAppointments(
+  //     appointments.filter((app) => app.id !== selectedAppointment.id)
+  //   );
+  //   setIsDeleteModalOpen(false);
+  //   setSelectedAppointment(null);
+  // };
+
+  // Custom Field Components for better styling
+  const CustomField = ({ name, type = "text", placeholder, className, children, ...props }) => (
+    <Field name={name}>
+      {({ field, meta }) => (
+        <div>
+          {type === "select" ? (
+            <select
+              {...field}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
+                meta.touched && meta.error ? 'border-red-500' : 'border-gray-300'
+              } ${className}`}
+              {...props}
+            >
+              {children}
+            </select>
+          ) : type === "textarea" ? (
+            <textarea
+              {...field}
+              placeholder={placeholder}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
+                meta.touched && meta.error ? 'border-red-500' : 'border-gray-300'
+              } ${className}`}
+              {...props}
+            />
+          ) : (
+            <input
+              {...field}
+              type={type}
+              placeholder={placeholder}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
+                meta.touched && meta.error ? 'border-red-500' : 'border-gray-300'
+              } ${className}`}
+              {...props}
+            />
+          )}
+          <ErrorMessage name={name} component="div" className="text-red-500 text-xs mt-1" />
+        </div>
+      )}
+    </Field>
+  );
 
   // Format the current date for display
   const formattedDate = currentDate.toLocaleDateString("en-US", {
@@ -254,163 +355,11 @@ const ScheduleManagement = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 lg:flex-row">
-      {/* Mobile sidebar toggle */}
-      <button
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md"
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-      >
-        {isSidebarOpen ? (
-          <X className="w-5 h-5 text-gray-600" />
-        ) : (
-          <Menu className="w-5 h-5 text-gray-600" />
-        )}
-      </button>
-
-      {/* Sidebar */}
-      <div
-        className={`${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 transform transition-transform duration-200 ease-in-out fixed lg:static inset-y-0 left-0 w-64 lg:w-80 bg-white border-b lg:border-r border-gray-200 p-4 lg:p-6 z-40 overflow-y-auto`}
-      >
-        <div className="mb-6 lg:mb-8">
-          <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">
-            Schedule Management
-          </h1>
-          <p className="text-gray-600 text-sm">
-            Manage your appointments and availability
-          </p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-6 lg:mb-8">
-          <div className="bg-blue-500 text-white p-3 lg:p-4 rounded-lg">
-            <div className="text-xs lg:text-sm font-medium">
-              Today's Appointments
-            </div>
-            <div className="text-2xl lg:text-3xl font-bold">
-              {appointments.length}
-            </div>
-          </div>
-          <div className="bg-green-500 text-white p-3 lg:p-4 rounded-lg">
-            <div className="text-xs lg:text-sm font-medium">Completed</div>
-            <div className="text-2xl lg:text-3xl font-bold">8</div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mb-6 lg:mb-8">
-          <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
-            Quick Actions
-          </h3>
-          <div className="space-y-2 lg:space-y-3">
-            <Link to="/availability">
-              <button className="w-full flex items-center px-3 py-2 text-sm lg:text-base text-left text-gray-700 hover:bg-gray-50 rounded-lg">
-                <span className="mr-2 lg:mr-3">📅</span>
-                Set Availability
-              </button>
-            </Link>
-            <Link to="/patient-directory">
-              <button className="w-full flex items-center px-3 py-2 text-sm lg:text-base text-left text-gray-700 hover:bg-gray-50 rounded-lg">
-                <span className="mr-2 lg:mr-3">👥</span>
-                Patient Directory
-              </button>
-            </Link>
-            <Link to="/analytics">
-              <button className="w-full flex items-center px-3 py-2 text-sm lg:text-base text-left text-gray-700 hover:bg-gray-50 rounded-lg">
-                <span className="mr-2 lg:mr-3">📊</span>
-                Analytics
-              </button>
-            </Link>
-            <Link to="/settings">
-              <button className="w-full flex items-center px-3 py-2 text-sm lg:text-base text-left text-gray-700 hover:bg-gray-50 rounded-lg">
-                <span className="mr-2 lg:mr-3">⚙️</span>
-                Settings
-              </button>
-            </Link>
-          </div>
-        </div>
-
-        {/* Calendar */}
-        <div>
-          <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
-            Calendar
-          </h3>
-          <div className="bg-white border border-gray-200 rounded-lg p-3 lg:p-4">
-            <div className="flex items-center justify-between mb-3 lg:mb-4">
-              <h4 className="font-medium text-sm lg:text-base">
-                {new Date(currentYear, currentMonth).toLocaleString("default", {
-                  month: "long",
-                  year: "numeric",
-                })}
-              </h4>
-              <div className="flex space-x-1 lg:space-x-2">
-                <button
-                  className="p-1 hover:bg-gray-100 rounded"
-                  onClick={() => {
-                    const prevMonth =
-                      currentMonth === 0 ? 11 : currentMonth - 1;
-                    const prevYear =
-                      currentMonth === 0 ? currentYear - 1 : currentYear;
-                    setCurrentMonth(prevMonth);
-                    setCurrentYear(prevYear);
-                  }}
-                >
-                  ←
-                </button>
-                <button
-                  className="p-1 hover:bg-gray-100 rounded"
-                  onClick={() => {
-                    const nextMonth =
-                      currentMonth === 11 ? 0 : currentMonth + 1;
-                    const nextYear =
-                      currentMonth === 11 ? currentYear + 1 : currentYear;
-                    setCurrentMonth(nextMonth);
-                    setCurrentYear(nextYear);
-                  }}
-                >
-                  →
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-7 gap-0.5 lg:gap-1 text-center text-xs lg:text-sm">
-              {["S", "M", "T", "W", "T", "F", "S"].map((day) => (
-                <div
-                  key={day}
-                  className="font-medium text-gray-500 py-1 lg:py-2"
-                >
-                  {day}
-                </div>
-              ))}
-              {generateCalendarDays().map((day, i) => {
-                const today = new Date();
-                const isToday =
-                  day === today.getDate() &&
-                  currentMonth === today.getMonth() &&
-                  currentYear === today.getFullYear();
-                const isCurrentMonth = day !== null;
-
-                return (
-                  <div
-                    key={i}
-                    className={`py-1 lg:py-2 cursor-pointer rounded ${
-                      isToday
-                        ? "bg-blue-500 text-white"
-                        : isCurrentMonth
-                        ? "hover:bg-blue-50"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    {day || ""}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
+      <Sidebar/>
+      <main className="pt-20 lg:pt-0 flex-1 ">
       {/* Main Content */}
-      <div className="flex-1 p-4 sm:p-6 lg:p-8 pt-16 lg:pt-8">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6">
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 lg:mb-8 gap-4">
           <div className="mb-4 sm:mb-0">
@@ -569,7 +518,7 @@ const ScheduleManagement = () => {
         </div>
       </div>
 
-      {/* Add Appointment Modal */}
+      {/* Add Appointment Modal with Formik */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -587,152 +536,130 @@ const ScheduleManagement = () => {
               </div>
             </div>
 
-            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                    Patient Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                    placeholder="Enter patient name"
-                  />
-                </div>
+            <Formik
+              initialValues={initialFormValues}
+              validationSchema={appointmentValidationSchema}
+              onSubmit={handleFormSubmit}
+            >
+              {({ isSubmitting, isValid, dirty }) => (
+                <Form className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                        Patient Name *
+                      </label>
+                      <CustomField
+                        name="name"
+                        type="text"
+                        placeholder="Enter patient name"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                    Age *
-                  </label>
-                  <input
-                    type="number"
-                    name="age"
-                    value={formData.age}
-                    onChange={handleInputChange}
-                    required
-                    min="1"
-                    max="120"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                    placeholder="Enter age"
-                  />
-                </div>
-              </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                        Age *
+                      </label>
+                      <CustomField
+                        name="age"
+                        type="number"
+                        placeholder="Enter age"
+                        min="1"
+                        max="120"
+                      />
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                    Time *
-                  </label>
-                  <select
-                    name="time"
-                    value={formData.time}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  >
-                    <option value="">Select time</option>
-                    {timeSlots
-                      .filter((slot) => slot.available)
-                      .map((slot) => (
-                        <option key={slot.time} value={slot.time}>
-                          {slot.time}
-                        </option>
-                      ))}
-                  </select>
-                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                        Time *
+                      </label>
+                      <CustomField name="time" type="select">
+                        <option value="">Select time</option>
+                        {timeSlots
+                          .filter((slot) => slot.available)
+                          .map((slot) => (
+                            <option key={slot.time} value={slot.time}>
+                              {slot.time}
+                            </option>
+                          ))}
+                      </CustomField>
+                    </div>
 
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                    Duration (minutes)
-                  </label>
-                  <select
-                    name="duration"
-                    value={formData.duration}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  >
-                    <option value="15">15 minutes</option>
-                    <option value="30">30 minutes</option>
-                    <option value="45">45 minutes</option>
-                    <option value="60">60 minutes</option>
-                    <option value="90">90 minutes</option>
-                  </select>
-                </div>
-              </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                        Duration (minutes) *
+                      </label>
+                      <CustomField name="duration" type="select">
+                        <option value={15}>15 minutes</option>
+                        <option value={30}>30 minutes</option>
+                        <option value={45}>45 minutes</option>
+                        <option value={60}>60 minutes</option>
+                        <option value={90}>90 minutes</option>
+                        <option value={120}>120 minutes</option>
+                      </CustomField>
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                    Consultation Type
-                  </label>
-                  <select
-                    name="type"
-                    value={formData.type}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  >
-                    <option value="Video Consultation">
-                      Video Consultation
-                    </option>
-                    <option value="Phone Consultation">
-                      Phone Consultation
-                    </option>
-                    <option value="In-Person">In-Person</option>
-                  </select>
-                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                        Consultation Type *
+                      </label>
+                      <CustomField name="type" type="select">
+                        <option value="Video Consultation">Video Consultation</option>
+                        <option value="Phone Consultation">Phone Consultation</option>
+                        <option value="In-Person">In-Person</option>
+                      </CustomField>
+                    </div>
 
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                    Status
-                  </label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="Confirmed">Confirmed</option>
-                    <option value="Scheduled">Scheduled</option>
-                  </select>
-                </div>
-              </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                        Status *
+                      </label>
+                      <CustomField name="status" type="select">
+                        <option value="Pending">Pending</option>
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Scheduled">Scheduled</option>
+                      </CustomField>
+                    </div>
+                  </div>
 
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                  Description
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  placeholder="Enter appointment description or notes"
-                />
-              </div>
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                      Description
+                    </label>
+                    <CustomField
+                      name="description"
+                      type="textarea"
+                      placeholder="Enter appointment description or notes"
+                      rows={3}
+                    />
+                  </div>
 
-              <div className="flex justify-end space-x-2 sm:space-x-3 pt-3 sm:pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 sm:px-6 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  className="px-4 sm:px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium text-sm"
-                >
-                  Add Appointment
-                </button>
-              </div>
-            </div>
+                  <div className="flex justify-end space-x-2 sm:space-x-3 pt-3 sm:pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsModalOpen(false)}
+                      className="px-4 sm:px-6 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting || !isValid || !dirty}
+                      className={`px-4 sm:px-6 py-2 text-white rounded-lg font-medium text-sm ${
+                        isSubmitting || !isValid || !dirty
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-blue-500 hover:bg-blue-600'
+                      }`}
+                    >
+                      {isSubmitting ? 'Adding...' : 'Add Appointment'}
+                    </button>
+                  </div>
+                </Form>
+              )}
+            </Formik>
           </div>
         </div>
       )}
@@ -830,7 +757,7 @@ const ScheduleManagement = () => {
               <div className="flex justify-end pt-3 sm:pt-4">
                 <button
                   onClick={() => setIsViewModalOpen(false)}
-                  className="px-4 sm:px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium text-sm"
+                  className="px-4 sm:px-6 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-sm"
                 >
                   Close
                 </button>
@@ -844,50 +771,38 @@ const ScheduleManagement = () => {
       {isDeleteModalOpen && selectedAppointment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div className="p-4 sm:p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                  Confirm Deletion
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+                <X className="w-6 h-6 text-red-600" />
+              </div>
+              <div className="text-center">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Delete Appointment
                 </h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Are you sure you want to delete the appointment for{" "}
+                  <strong>{selectedAppointment.name}</strong>? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setIsDeleteModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-sm"
                 >
-                  <X className="w-5 sm:w-6 h-5 sm:h-6" />
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAppointment}
+                  className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg font-medium text-sm"
+                >
+                  Delete
                 </button>
               </div>
-            </div>
-
-            <div className="p-4 sm:p-6 space-y-4">
-              <p className="text-gray-600 text-sm sm:text-base">
-                Are you sure you want to delete the appointment for{" "}
-                <span className="font-semibold">
-                  {selectedAppointment.name}
-                </span>{" "}
-                at {selectedAppointment.time}?
-              </p>
-              <p className="text-xs sm:text-sm text-gray-500">
-                This action cannot be undone.
-              </p>
-            </div>
-
-            <div className="p-4 sm:p-6 border-t border-gray-200 flex justify-end space-x-2 sm:space-x-3">
-              <button
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="px-4 sm:px-6 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteAppointment}
-                className="px-4 sm:px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium text-sm"
-              >
-                Delete Appointment
-              </button>
             </div>
           </div>
         </div>
       )}
+      </main>
     </div>
   );
 };
