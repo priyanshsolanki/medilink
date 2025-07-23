@@ -5,11 +5,8 @@ const cors = require('cors');
 
 const passport = require('./config/passport');
 const session = require('express-session');
-<<<<<<< HEAD
 const NotificationScheduler = require('./utils/notificationScheduler');
-=======
 const recordsRoutes = require('./routes/records');
->>>>>>> medical-records
 
 const app = express();
 connectDB().then(() => {
