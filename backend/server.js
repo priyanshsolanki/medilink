@@ -5,7 +5,11 @@ const cors = require('cors');
 
 const passport = require('./config/passport');
 const session = require('express-session');
+<<<<<<< HEAD
 const NotificationScheduler = require('./utils/notificationScheduler');
+=======
+const recordsRoutes = require('./routes/records');
+>>>>>>> medical-records
 
 const app = express();
 connectDB().then(() => {
@@ -42,6 +46,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/availability', require('./routes/availability'));
 app.use('/api/appointments', require('./routes/appointments'));
 app.use('/api/messages', require('./controllers/messageController'));
+app.use('/api', require('./routes/records'));
 
 const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
