@@ -20,12 +20,9 @@ router.post('/send', auth, async (req, res) => {
             return res.status(404).json({ message: 'Recipient not found' });
         }
 
-        // Ensure sender is patient or doctor and recipient is the other role
-        if (req.user.role === 'patient' && recipient.role !== 'doctor') {
-            return res.status(403).json({ message: 'Patients can only message doctors' });
-        }
-        if (req.user.role === 'doctor' && recipient.role !== 'patient') {
-            return res.status(403).json({ message: 'Doctors can only message patients' });
+        // Allow any authenticated user to message any other user
+        if (senderId === recipientId) {
+            return res.status(403).json({ message: 'Cannot send message to yourself' });
         }
 
         const message = new Message({
@@ -54,13 +51,54 @@ router.post('/send', auth, async (req, res) => {
     }
 });
 
-// Get messages for the logged-in user
+// Get messages for the logged-in user from a specific user
+router.get('/conversation/:userId', auth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const targetUserId = req.params.userId;
+
+        if (!targetUserId) {
+            return res.status(400).json({ message: 'Target user ID is required' });
+        }
+
+        const targetUser = await User.findById(targetUserId);
+        if (!targetUser) {
+            return res.status(404).json({ message: 'Target user not found' });
+        }
+
+        // Fetch messages where the logged-in user is either sender or recipient
+        const messages = await Message.find({
+            $or: [
+                { senderId: userId, recipientId: targetUserId },
+                { senderId: targetUserId, recipientId: userId }
+            ]
+        }).populate('senderId', 'name').sort({ timestamp: -1 }); // Sort by timestamp descending
+
+        if (!messages.length) {
+            return res.status(404).json({ message: 'No conversation found with this user' });
+        }
+
+        res.json(messages.map(msg => ({
+            id: msg._id,
+            senderName: msg.senderId.name,
+            encryptedContent: msg.encryptedContent,
+            iv: msg.iv,
+            isRead: msg.isRead,
+            timestamp: msg.timestamp,
+        })));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+// Get all messages for the logged-in user
 router.get('/inbox', auth, async (req, res) => {
     try {
         const userId = req.user.id;
         const messages = await Message.find({
             recipientId: userId,
-        }).populate('senderId', 'name');
+        }).populate('senderId', 'name').sort({ timestamp: -1 }); // Sort by timestamp descending
 
         if (!messages.length) {
             return res.status(404).json({ message: 'No messages found' });
