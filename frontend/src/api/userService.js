@@ -22,7 +22,19 @@ const userService = {
       handleApiError(error, 'Could not load doctors');
     }
   },
-
+  /**
+   * Fetch all patients
+   * GET /api/patients
+   * @returns {Promise<Array>} list of doctor profiles
+   */
+  getAllPatients: async () => {
+    try {
+      const res = await axiosInstance.get('/users/patients');
+      return res.data;
+    } catch (error) {
+      handleApiError(error, 'Could not load patients');
+    }
+  },
   /**
    * Fetch a single user by ID
    * GET /api/doctors/:userId

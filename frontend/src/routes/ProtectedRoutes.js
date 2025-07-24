@@ -18,7 +18,6 @@ import PatientChatPage from "../pages/Patient/patientchatpage";
 const ProtectedRoutes = () => {
   return (
     <Routes>
-      //Priyansh i have done this because i was not able to signup due to env file which i didn't had that's why i kept this routes to public 
       <Route path="/doctor/chat/:patientId" element={<DoctorChatPage />} />
       <Route path="/patient/chat" element={<PatientChatPage />} />
       <Route path="/patient-directory" element={<PatientDirectory />} />

@@ -80,6 +80,8 @@ exports.deleteRecord = async (req, res, next) => {
     next(err);
   }
 };
+// controllers/recordsController.js
+
 exports.downloadRecordFile = async (req, res, next) => {
   try {
     const { recordId } = req.params;
@@ -88,8 +90,9 @@ exports.downloadRecordFile = async (req, res, next) => {
     if (!record || record.isDeleted) {
       return res.status(404).json({ error: 'Record not found or deleted' });
     }
-    // Redirect to Cloudinary file URL
-    return res.redirect(record.fileUrl); // ⬅️ frontends will auto-download if file type is .pdf or .docx
+
+    // Return the direct URL
+    res.json({ fileUrl: record.fileUrl });
   } catch (err) {
     next(err);
   }
