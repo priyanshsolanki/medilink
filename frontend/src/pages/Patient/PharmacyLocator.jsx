@@ -183,6 +183,15 @@ export default function PharmacyLocator() {
                 <div>
                   <strong>{ph.name}</strong>
                   {ph.address && <p className="mt-1">{ph.address}</p>}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDirections(ph);
+                    }}
+                    className="text-blue-600 hover:underline"
+                  >
+                    Get Directions
+                  </button>
                 </div>
               </Popup>
             </Marker>
