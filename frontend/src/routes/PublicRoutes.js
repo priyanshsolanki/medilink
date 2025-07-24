@@ -22,6 +22,9 @@ import DoctorRegister from "../pages/Auth/DoctorRegister";
 import GoogleAuthSuccess from "../pages/Auth/GoogleAuthSuccess";
 import EmailVerification from "../pages/Auth/EmailVerification";
 import UnauthorizedPage from "../pages/Auth/UnauthorizedPage";
+import Notifications from "../pages/Notifications";
+import Appointments from "../pages/Appointments";
+import HelpCenter from "../pages/HelpCenter";
 
 
 const PublicRoutes = () => {
@@ -48,6 +51,9 @@ const PublicRoutes = () => {
        <Route path="/google-auth-success" element={<GoogleAuthSuccess />} />
 
        <Route exact path="/unauthorized" element={<UnauthorizedPage/>} /> 
+       <Route exact path="/notifications" element={<Notifications />} />
+        <Route exact path="/appointments" element={<Appointments />} />
+        <Route exact path="/help-center" element={<HelpCenter />} />
 
     </Routes>
   );
