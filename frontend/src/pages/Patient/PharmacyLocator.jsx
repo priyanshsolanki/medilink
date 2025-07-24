@@ -45,6 +45,7 @@ function getDistance(lat1, lon1, lat2, lon2) {
 
 export default function PharmacyLocator() {
   const [userLocation, setUserLocation] = useState(null);
+  const [geoError, setGeoError] = useState("");
   const [pharmacies, setPharmacies] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPharmacy, setSelectedPharmacy] = useState(null);
@@ -52,11 +53,16 @@ export default function PharmacyLocator() {
 
   // 1) Get the user's current geolocation
   useEffect(() => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      setGeoError("Geolocation is not supported by your browser.");
+      return;
+    }
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) =>
-        setUserLocation({ lat: coords.latitude, lng: coords.longitude }),
-      () => alert("Could not get your location")
+      ({ coords }) => {
+        setUserLocation({ lat: coords.latitude, lng: coords.longitude });
+        setGeoError("");
+      },
+      () => setGeoError("Location access is required to find nearby pharmacies.")
     );
   }, []);
 
@@ -122,7 +128,7 @@ export default function PharmacyLocator() {
   // 5) Open Google Maps directions
   const handleDirections = (ph) => {
     if (!userLocation) {
-      alert("Your location is not yet available");
+      setGeoError("Location access is required to get directions.");
       return;
     }
     const { lat: oLat, lng: oLng } = userLocation;
@@ -137,9 +143,14 @@ export default function PharmacyLocator() {
 
       <div className="flex-1 p-6 max-w-7xl mx-auto">
         <h1 className="text-2xl font-semibold mb-2">Pharmacy Locator</h1>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600 mb-2">
           Allow location access to find nearby pharmacies.
         </p>
+        {geoError && (
+          <div className="bg-yellow-100 text-yellow-800 p-3 rounded mb-6">
+            {geoError}
+          </div>
+        )}
 
         {/* ——— Map ——— */}
         <MapContainer
