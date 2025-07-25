@@ -9,6 +9,7 @@ function getTimeSlots(startTime, endTime) {
     const slots = [];
     let [h, m] = startTime.split(':').map(Number);
     const [endH, endM] = endTime.split(':').map(Number);
+
     while (h < endH || (h === endH && m < endM)) {
         slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
         m += 30;
@@ -17,12 +18,37 @@ function getTimeSlots(startTime, endTime) {
     return slots;
 }
 
-// Check for overlapping time slots
-function hasConflict(newDate, newStartTime, newEndTime, existingSlots) {
-    const newSlots = getTimeSlots(newStartTime, newEndTime);
-    return existingSlots.some(({ date, startTime, endTime }) =>
-        date.toISOString().split('T')[0] === newDate &&
-        getTimeSlots(startTime, endTime).some(slot => newSlots.includes(slot))
+// Improved function to check for overlapping time slots
+function hasOverlap(start1, end1, start2, end2) {
+    // Convert time strings to minutes since midnight for easier comparison
+    const toMinutes = (timeStr) => {
+        const [h, m] = timeStr.split(':').map(Number);
+        return h * 60 + m;
+    };
+
+    const s1 = toMinutes(start1);
+    const e1 = toMinutes(end1);
+    const s2 = toMinutes(start2);
+    const e2 = toMinutes(end2);
+
+    return s1 < e2 && s2 < e1;
+}
+
+// Check for conflicting availability slots
+async function hasConflict(doctorId, date, startTime, endTime, excludeId = null) {
+    const query = {
+        doctorId,
+        date: new Date(date), // Ensure we're comparing Date objects
+    };
+
+    if (excludeId) {
+        query._id = { $ne: excludeId };
+    }
+
+    const existingSlots = await Availability.find(query);
+
+    return existingSlots.some(slot =>
+        hasOverlap(startTime, endTime, slot.startTime, slot.endTime)
     );
 }
 
@@ -140,8 +166,7 @@ router.post('/', auth, async (req, res) => {
         }
 
         // Check for existing availability on the same date
-        const existingSlots = await Availability.find({ doctorId, date: inputDate });
-        if (hasConflict(date, startTime, endTime, existingSlots)) {
+        if (await hasConflict(doctorId, date, startTime, endTime)) {
             return res.status(409).json({ message: 'Conflicting availability detected' });
         }
 
@@ -173,12 +198,13 @@ router.put('/:id', auth, async (req, res) => {
         }
 
         // Check for existing availability on the same date (excluding the current slot)
-        const existingSlots = await Availability.find({
-            doctorId: availability.doctorId,
-            _id: { $ne: id },
-            date: inputDate
-        });
-        if (hasConflict(date || availability.date, startTime || availability.startTime, endTime || availability.endTime, existingSlots)) {
+        if (await hasConflict(
+            availability.doctorId,
+            date || availability.date,
+            startTime || availability.startTime,
+            endTime || availability.endTime,
+            id
+        )) {
             return res.status(409).json({ message: 'Conflicting availability detected' });
         }
 

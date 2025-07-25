@@ -21,6 +21,7 @@ const ProtectedRoutes = () => {
       <Route path="/doctor/chat/:patientId" element={<DoctorChatPage />} />
       <Route path="/patient/chat" element={<PatientChatPage />} />
       <Route path="/patient-directory" element={<PatientDirectory />} />
+      <Route path="/pharmacy-locator" element={<PharmacyLocator />} />
 
       <Route element={<PrivateRoute allowedRoles={[Roles.DOCTOR,Roles.USER]} />}>
        {/* Add routes that both users have access */}
