@@ -51,59 +51,73 @@ async function hasConflict(doctorId, date, startTime, endTime, excludeId = null)
         hasOverlap(startTime, endTime, slot.startTime, slot.endTime)
     );
 }
-
 /**
- * GET /api/availability
- * Returns every doctor plus their upcoming 30-minute availability slots grouped by date for the next 7 days.
+ * GET /api/doctors/
+ * Returns each doctor with their next 7 days of availability,
+ * grouped by date into 30-minute slots.
  */
 router.get('/', auth, async (req, res) => {
     try {
-        const doctors = await Doctor
-            .find({ role: 'doctor' })
-            .select('name specialty rating experience location image fee')
-            .lean();
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Start of today
-        const sevenDaysLater = new Date(today);
-        sevenDaysLater.setDate(today.getDate() + 7);
-
-        const availEntries = await Availability
-            .find({
-                date: { $gte: today, $lt: sevenDaysLater }
-            })
-            .sort({ date: 1 })
-            .lean();
-
-        const availabilityMap = {};
-        availEntries.forEach(({ doctorId, date, startTime, endTime }) => {
-            const docKey = doctorId.toString();
-            const dateKey = date.toISOString().split('T')[0];
-            if (!availabilityMap[docKey]) availabilityMap[docKey] = {};
-            if (!availabilityMap[docKey][dateKey]) availabilityMap[docKey][dateKey] = [];
-
-            const slots = getTimeSlots(startTime, endTime);
-            availabilityMap[docKey][dateKey] = slots;
+      // 1. Fetch all doctors
+      const doctors = await Doctor
+        .find({ role: 'doctor' })
+        .select('name specialty rating experience location image fee')
+        .lean();
+  
+      // 2. Define date window
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const sevenDaysLater = new Date(today);
+      sevenDaysLater.setDate(today.getDate() + 7);
+  
+      // 3. Fetch availability entries
+      const entries = await Availability
+        .find({ date: { $gte: today, $lt: sevenDaysLater } })
+        .sort({ date: 1 })
+        .lean();
+  
+      // 4. Build a map: doctorId -> { date: [{ availabilityId, startTime, endTime }, ...] }
+      const availabilityMap = {};
+      entries.forEach(({ _id, doctorId, date, startTime, endTime }) => {
+        const docKey = doctorId.toString();
+        const dateKey = date.toISOString().split('T')[0];
+        if (!availabilityMap[docKey]) availabilityMap[docKey] = {};
+        if (!availabilityMap[docKey][dateKey]) availabilityMap[docKey][dateKey] = [];
+  
+        // Slice interval into 30-min slots with start and end times
+        const rawSlots = getTimeSlots(startTime, endTime); // ['HH:mm', ...]
+        const slots = rawSlots.map(slot => {
+          const [h, m] = slot.split(':').map(Number);
+          const start = slot;
+          const dt = new Date(1970, 0, 1, h, m);
+          dt.setMinutes(dt.getMinutes() + 30);
+          const end = dt.toTimeString().slice(0,5);
+          return { availabilityId: _id, startTime: start, endTime: end };
         });
-
-        const result = doctors.map(doc => ({
-            id: doc._id,
-            name: doc.name,
-            specialty: doc.specialty,
-            rating: doc.rating,
-            experience: doc.experience,
-            location: doc.location,
-            image: doc.image,
-            fee: doc.fee,
-            availability: availabilityMap[doc._id.toString()] || {}
-        }));
-
-        res.json(result);
+  
+        availabilityMap[docKey][dateKey].push(...slots);
+      });
+  
+      // 5. Merge into final payload
+      const result = doctors.map(doc => ({
+        id: doc._id,
+        name: doc.name,
+        specialty: doc.specialty,
+        rating: doc.rating,
+        experience: doc.experience,
+        location: doc.location,
+        image: doc.image,
+        fee: doc.fee,
+        availability: availabilityMap[doc._id.toString()] || {},
+      }));
+  
+      res.json(result);
     } catch (error) {
-        console.error('Error fetching doctors with availability', error);
-        res.status(500).json({ message: 'Error fetching availability' });
+      console.error('Error fetching doctors with availability', error);
+      res.status(500).json({ message: 'Error fetching availability' });
     }
-});
+  });
+  
 
 /**
  * GET /api/doctors/:doctorId/availability
