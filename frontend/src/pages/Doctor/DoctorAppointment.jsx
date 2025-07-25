@@ -4,7 +4,7 @@ import { Menu, X } from "lucide-react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import Sidebar from "../../components/Sidebar";
-import appointmentService from "../../api/appointmentService";
+import appointmentService, { getAppointmentsByDoctor } from "../../api/appointmentService";
 import { useAuth } from "../../context/AuthContext";
 
 // Validation schema using Yup
@@ -44,61 +44,7 @@ const ScheduleManagement = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const {authUser} = useAuth();
-  const [appointments, setAppointments] = useState([
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      age: 34,
-      time: "09:00",
-      duration: "30 min",
-      type: "Video Consultation",
-      description: "Follow-up consultation",
-      status: "Confirmed",
-      initials: "SJ",
-      bgColor: "bg-blue-100",
-      textColor: "text-blue-600",
-    },
-    {
-      id: 2,
-      name: "Michael Chen",
-      age: 28,
-      time: "10:30",
-      duration: "45 min",
-      type: "Video Consultation",
-      description: "Initial consultation",
-      status: "Pending",
-      isNewPatient: true,
-      initials: "MC",
-      bgColor: "bg-purple-100",
-      textColor: "text-purple-600",
-    },
-    {
-      id: 3,
-      name: "Emily Rodriguez",
-      age: 45,
-      time: "14:00",
-      duration: "30 min",
-      type: "Phone Consultation",
-      description: "Prescription renewal",
-      status: "Confirmed",
-      initials: "ER",
-      bgColor: "bg-pink-100",
-      textColor: "text-pink-600",
-    },
-    {
-      id: 4,
-      name: "David Wilson",
-      age: 52,
-      time: "15:30",
-      duration: "60 min",
-      type: "Video Consultation",
-      description: "Comprehensive health review",
-      status: "Confirmed",
-      initials: "DW",
-      bgColor: "bg-green-100",
-      textColor: "text-green-600",
-    },
-  ]);
+  const [appointments, setAppointments] = useState([  ]);
 
   const initialFormValues = {
     name: "",
@@ -230,6 +176,13 @@ const ScheduleManagement = () => {
       // error toast
     }
   };
+
+  useEffect(() => {
+    getAppointmentsByDoctor(authUser.id)
+      .then((data) => setAppointments(data))
+      .catch((err) => console.error(err))
+      .finally(() => {});
+  }, []);
 
   // const handleFormSubmit = (values, { setSubmitting, resetForm }) => {
   //   // Check if the selected time slot is still available
@@ -434,10 +387,10 @@ const ScheduleManagement = () => {
                     </div>
                     <div>
                       <h4 className="font-medium text-gray-900 text-sm sm:text-base">
-                        {appointment.name}
+                        {appointment?.patientId?.name}
                       </h4>
                       <p className="text-xs sm:text-sm text-gray-500">
-                        Age {appointment.age}
+                      {appointment?.patientId?.email}
                       </p>
                     </div>
                   </div>
@@ -445,12 +398,12 @@ const ScheduleManagement = () => {
                     <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-500 mb-1 sm:mb-2">
                       <span>🕘</span>
                       <span>
-                        {appointment.time} ({appointment.duration})
+                        {appointment.time}
                       </span>
                     </div>
                     <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-500 mb-1 sm:mb-2">
                       <span>{getTypeIcon(appointment.type)}</span>
-                      <span>{appointment.type}</span>
+                      <span>{appointment.date}</span>
                     </div>
                     <div className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
                       {appointment.description}
@@ -490,318 +443,7 @@ const ScheduleManagement = () => {
             ))}
           </div>
         </div>
-
-        {/* Available Time Slots */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="p-4 sm:p-6 border-b border-gray-200">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-              Available Time Slots
-            </h3>
-          </div>
-          <div className="p-4 sm:p-6">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 lg:gap-4">
-              {timeSlots.map((slot) => (
-                <div
-                  key={slot.time}
-                  className={`p-2 sm:p-3 text-center rounded-lg text-xs sm:text-sm font-medium ${
-                    slot.available
-                      ? "bg-green-100 text-green-800 cursor-pointer hover:bg-green-200"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  <div>{slot.time}</div>
-                  {!slot.available && <div className="text-xs">Booked</div>}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
-
-      {/* Add Appointment Modal with Formik */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-4 sm:p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                  Add New Appointment
-                </h3>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-5 sm:w-6 h-5 sm:h-6" />
-                </button>
-              </div>
-            </div>
-
-            <Formik
-              initialValues={initialFormValues}
-              validationSchema={appointmentValidationSchema}
-              onSubmit={handleFormSubmit}
-            >
-              {({ isSubmitting, isValid, dirty }) => (
-                <Form className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                        Patient Name *
-                      </label>
-                      <CustomField
-                        name="name"
-                        type="text"
-                        placeholder="Enter patient name"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                        Age *
-                      </label>
-                      <CustomField
-                        name="age"
-                        type="number"
-                        placeholder="Enter age"
-                        min="1"
-                        max="120"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                        Time *
-                      </label>
-                      <CustomField name="time" type="select">
-                        <option value="">Select time</option>
-                        {timeSlots
-                          .filter((slot) => slot.available)
-                          .map((slot) => (
-                            <option key={slot.time} value={slot.time}>
-                              {slot.time}
-                            </option>
-                          ))}
-                      </CustomField>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                        Duration (minutes) *
-                      </label>
-                      <CustomField name="duration" type="select">
-                        <option value={15}>15 minutes</option>
-                        <option value={30}>30 minutes</option>
-                        <option value={45}>45 minutes</option>
-                        <option value={60}>60 minutes</option>
-                        <option value={90}>90 minutes</option>
-                        <option value={120}>120 minutes</option>
-                      </CustomField>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                        Consultation Type *
-                      </label>
-                      <CustomField name="type" type="select">
-                        <option value="Video Consultation">Video Consultation</option>
-                        <option value="Phone Consultation">Phone Consultation</option>
-                        <option value="In-Person">In-Person</option>
-                      </CustomField>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                        Status *
-                      </label>
-                      <CustomField name="status" type="select">
-                        <option value="Pending">Pending</option>
-                        <option value="Confirmed">Confirmed</option>
-                        <option value="Scheduled">Scheduled</option>
-                      </CustomField>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                      Description
-                    </label>
-                    <CustomField
-                      name="description"
-                      type="textarea"
-                      placeholder="Enter appointment description or notes"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="flex justify-end space-x-2 sm:space-x-3 pt-3 sm:pt-4">
-                    <button
-                      type="button"
-                      onClick={() => setIsModalOpen(false)}
-                      className="px-4 sm:px-6 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-sm"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting || !isValid || !dirty}
-                      className={`px-4 sm:px-6 py-2 text-white rounded-lg font-medium text-sm ${
-                        isSubmitting || !isValid || !dirty
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-blue-500 hover:bg-blue-600'
-                      }`}
-                    >
-                      {isSubmitting ? 'Adding...' : 'Add Appointment'}
-                    </button>
-                  </div>
-                </Form>
-              )}
-            </Formik>
-          </div>
-        </div>
-      )}
-
-      {/* View Appointment Modal */}
-      {isViewModalOpen && selectedAppointment && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-4 sm:p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                  Appointment Details
-                </h3>
-                <button
-                  onClick={() => setIsViewModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-5 sm:w-6 h-5 sm:h-6" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-                <div
-                  className={`w-12 sm:w-16 h-12 sm:h-16 ${selectedAppointment.bgColor} rounded-full flex items-center justify-center`}
-                >
-                  <span
-                    className={`${selectedAppointment.textColor} text-xl sm:text-2xl font-medium`}
-                  >
-                    {selectedAppointment.initials}
-                  </span>
-                </div>
-                <div>
-                  <h4 className="text-lg sm:text-xl font-bold text-gray-900">
-                    {selectedAppointment.name}
-                  </h4>
-                  <p className="text-gray-600 text-sm sm:text-base">
-                    Age {selectedAppointment.age}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-500 mb-1">
-                    Time
-                  </label>
-                  <p className="text-gray-900 text-sm sm:text-base">
-                    {selectedAppointment.time} ({selectedAppointment.duration})
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-500 mb-1">
-                    Type
-                  </label>
-                  <p className="text-gray-900 text-sm sm:text-base">
-                    {getTypeIcon(selectedAppointment.type)}{" "}
-                    {selectedAppointment.type}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-500 mb-1">
-                    Status
-                  </label>
-                  <span
-                    className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-full ${getStatusColor(
-                      selectedAppointment.status
-                    )}`}
-                  >
-                    {selectedAppointment.status}
-                  </span>
-                </div>
-                {selectedAppointment.isNewPatient && (
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-500 mb-1">
-                      Patient Type
-                    </label>
-                    <span className="px-2 sm:px-3 py-1 bg-purple-100 text-purple-800 text-xs sm:text-sm rounded-full">
-                      New Patient
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-500 mb-1">
-                  Description
-                </label>
-                <p className="text-gray-900 text-sm sm:text-base whitespace-pre-line">
-                  {selectedAppointment.description || "No description provided"}
-                </p>
-              </div>
-
-              <div className="flex justify-end pt-3 sm:pt-4">
-                <button
-                  onClick={() => setIsViewModalOpen(false)}
-                  className="px-4 sm:px-6 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-sm"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {isDeleteModalOpen && selectedAppointment && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div className="p-4 sm:p-6">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
-                <X className="w-6 h-6 text-red-600" />
-              </div>
-              <div className="text-center">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Delete Appointment
-                </h3>
-                <p className="text-sm text-gray-500 mb-4">
-                  Are you sure you want to delete the appointment for{" "}
-                  <strong>{selectedAppointment.name}</strong>? This action cannot be undone.
-                </p>
-              </div>
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setIsDeleteModalOpen(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteAppointment}
-                  className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg font-medium text-sm"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       </main>
     </div>
   );

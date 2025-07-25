@@ -80,41 +80,45 @@ router.get('/', auth, async (req, res) => {
 });
 
 /**
- * GET /api/availability/:doctorId
- * Returns all availability slots for a specific doctor for the next 7 days, grouped by date
+ * GET /api/doctors/:doctorId/availability
+ * Returns availability grouped by date with each slot's id and times
  */
 router.get('/:doctorId', auth, async (req, res) => {
     try {
-        const { doctorId } = req.params;
-
-        // Fetch availability entries for the next 7 days for this doctor
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Start of today
-        const sevenDaysLater = new Date(today);
-        sevenDaysLater.setDate(today.getDate() + 7);
-
-        const slots = await Availability.find({
-            doctorId,
-            date: { $gte: today, $lt: sevenDaysLater }
-        })
-            .sort({ date: 1 })
-            .lean();
-
-        // Group slots by date into 30-minute increments
-        const grouped = {};
-        slots.forEach(({ date, startTime, endTime }) => {
-            const dateKey = date.toISOString().split('T')[0];
-            grouped[dateKey] = grouped[dateKey] || [];
-
-            grouped[dateKey] = getTimeSlots(startTime, endTime);
+      const { doctorId } = req.params;
+  
+      // Calculate date window
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const sevenDaysLater = new Date(today);
+      sevenDaysLater.setDate(today.getDate() + 7);
+  
+      // Fetch raw availability entries
+      const slots = await Availability.find({
+        doctorId,
+        date: { $gte: today, $lt: sevenDaysLater }
+      })
+        .sort({ date: 1 })
+        .lean();
+  
+      // Group by date
+      const grouped = {};
+      slots.forEach(({ _id, date, startTime, endTime }) => {
+        const dateKey = date.toISOString().split('T')[0];
+        if (!grouped[dateKey]) grouped[dateKey] = [];
+        grouped[dateKey].push({
+          availabilityId: _id,
+          startTime,
+          endTime
         });
-
-        res.json({ doctorId, availability: grouped });
+      });
+  
+      res.json({ doctorId, availability: grouped });
     } catch (error) {
-        console.error('Error fetching doctor availability', error);
-        res.status(500).json({ message: 'Error fetching doctor availability' });
+      console.error('Error fetching doctor availability', error);
+      res.status(500).json({ message: 'Error fetching doctor availability' });
     }
-});
+  });  
 
 router.post('/', auth, async (req, res) => {
     try {
@@ -192,27 +196,30 @@ router.put('/:id', auth, async (req, res) => {
 
 router.delete('/:id', auth, async (req, res) => {
     try {
-        const { id } = req.params;
-        const availability = await Availability.findById(id);
-        if (!availability) return res.status(404).json({ message: 'Availability slot not found' });
-        if (availability.doctorId.toString() !== req.user.id) {
-            return res.status(403).json({ message: 'Unauthorized to delete this slot' });
-        }
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Start of today
-        const availabilityDate = new Date(availability.date);
-        availabilityDate.setHours(0, 0, 0, 0); // Normalize date
-        if (availabilityDate < today) {
-            return res.status(400).json({ message: 'Cannot delete availability for past dates' });
-        }
-
-        await availability.remove();
-        res.json({ message: 'Availability slot deleted successfully' });
+      const { id } = req.params;
+      const availability = await Availability.findById(id);
+      if (!availability) return res.status(404).json({ message: 'Availability slot not found' });
+      if (availability.doctorId.toString() !== req.user.id) {
+        return res.status(403).json({ message: 'Unauthorized to delete this slot' });
+      }
+  
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Start of today
+      const availabilityDate = new Date(availability.date);
+      availabilityDate.setHours(0, 0, 0, 0);
+      if (availabilityDate < today) {
+        return res.status(400).json({ message: 'Cannot delete availability for past dates' });
+      }
+  
+      // Use deleteOne() instead of remove()
+      await availability.deleteOne();
+      // Or: await Availability.findByIdAndDelete(id);
+  
+      res.json({ message: 'Availability slot deleted successfully' });
     } catch (error) {
-        console.error('Error deleting availability', error);
-        res.status(500).json({ message: 'Error deleting availability' });
+      console.error('Error deleting availability', error);
+      res.status(500).json({ message: 'Error deleting availability' });
     }
-});
-
+  });
+  
 module.exports = router;

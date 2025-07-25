@@ -44,10 +44,10 @@ const availabilityService = {
    * @param {String} doctorId
    * @param {Object} data { date, startTime, endTime, isRecurring }
    */
-  createAvailability: async (doctorId, data) => {
+  createAvailability: async (data) => {
     try {
       const res = await axiosInstance.post(
-        `/doctors/${doctorId}/availability`,
+        `/availability`,
         data
       );
       toast.success('Availability created');
@@ -81,10 +81,10 @@ const availabilityService = {
    * Delete an availability slot (doctor only)
    * DELETE /api/doctors/:doctorId/availability/:id
    */
-  deleteAvailability: async (doctorId, slotId) => {
+  deleteAvailability: async (slotId) => {
     try {
       const res = await axiosInstance.delete(
-        `/doctors/${doctorId}/availability/${slotId}`
+        `/availability/${slotId}`
       );
       toast.success('Availability deleted');
       return res.data; // { message }
