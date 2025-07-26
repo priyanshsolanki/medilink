@@ -60,27 +60,6 @@ export default function EmailVerification() {
     window.location.href = '/login';
   };
 
-  const handleResendVerification = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/resend-verification`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        setMessage('Verification email has been resent. Please check your inbox.');
-      } else {
-        setMessage('Failed to resend verification email. Please try again.');
-      }
-    } catch (error) {
-      setMessage('Something went wrong. Please try again.');
-    }
-  };
-
   const handleBackToHome = () => {
     window.location.href = '/';
   };
