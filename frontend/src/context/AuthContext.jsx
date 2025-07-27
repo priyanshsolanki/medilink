@@ -4,8 +4,10 @@ import {
   logout as authServiceLogout
 } from "../api/authService";
 import { useNavigate } from "react-router-dom";
+import {jwtDecode} from "jwt-decode";
 
 const AuthContext = createContext();
+
 
 export const AuthProvider = ({ children }) => {
   const [authUser, setAuthUser] = useState(JSON.parse(localStorage.getItem('auth')));
@@ -13,13 +15,28 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate(); 
   // On initial load
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('auth'));
-    if (user) setAuthUser(user);
+    setAuthUser(getAuthUserFromToken());
   }, []);
 
   // 1. Call Cognito login, return token + email (do not set authUser yet)
   const authenticate = (email, password) => {
     return authServiceLogin(email, password);
+  };
+  // Define a structure for the token payload (optional for TypeScript users)
+  const getAuthUserFromToken = () => {
+    const token = localStorage.getItem("token"); // assuming it's stored as "token"
+    if (!token) return null;
+
+    try {
+      const decoded = jwtDecode(token); // decode the token
+      console.log(decoded)
+      return decoded; // includes name, role, email, etc.
+    } catch (err) {
+      console.error("Invalid JWT token", err);
+      navigate(`/`);
+
+      return null;
+    }
   };
 
   // 2. Store after verifying security & cipher

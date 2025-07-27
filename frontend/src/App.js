@@ -9,7 +9,7 @@ function AppWrapper() {
   return (
     <>
       <PublicRoutes />
-      <ProtectedRoutes/>
+      <ProtectedRoutes />
     </>
   );
 }
@@ -22,7 +22,7 @@ function App() {
           <AppWrapper />
         </AuthProvider>
       </BrowserRouter>
-      <ToastContainer/>
+      <ToastContainer />
     </>
   );
 }

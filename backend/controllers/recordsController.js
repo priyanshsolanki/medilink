@@ -1,9 +1,23 @@
 // controllers/recordsController.js
 const Record = require('../models/Record');
+const cache = new Map();
 // List all records for a patient
 exports.getRecords = async (req, res, next) => {
   const { patientId } = req.params;
-  const records = await Record.find({ patientId, isDeleted: false }).populate('uploadedBy lastUpdatedBy', 'name');;
+
+  // --- Caching logic ---
+  if (cache.has(patientId)) {
+    // Return cached data instantly
+    return res.status(200).json(cache.get(patientId));
+  }
+
+  // If not cached, fetch from DB
+  const records = await Record.find({ patientId, isDeleted: false }).populate('uploadedBy lastUpdatedBy', 'name');
+  
+  // Store in cache for 60 seconds (you can adjust this time)
+  cache.set(patientId, records);
+  setTimeout(() => cache.delete(patientId), 60 * 1000);
+
   res.status(200).json(records);
 };
 // Get one record
@@ -80,6 +94,8 @@ exports.deleteRecord = async (req, res, next) => {
     next(err);
   }
 };
+// controllers/recordsController.js
+
 exports.downloadRecordFile = async (req, res, next) => {
   try {
     const { recordId } = req.params;
@@ -88,8 +104,9 @@ exports.downloadRecordFile = async (req, res, next) => {
     if (!record || record.isDeleted) {
       return res.status(404).json({ error: 'Record not found or deleted' });
     }
-    // Redirect to Cloudinary file URL
-    return res.redirect(record.fileUrl); // ⬅️ frontends will auto-download if file type is .pdf or .docx
+
+    // Return the direct URL
+    res.json({ fileUrl: record.fileUrl });
   } catch (err) {
     next(err);
   }

@@ -1,5 +1,7 @@
 import React from "react";
 import { Route, Routes } from "react-router-dom";
+
+import Analytics from "../pages/Analytics";
 import Home from "../pages/HomePage/Home";
 import LoginPage from "../pages/Auth/LoginPage";
 import PatientRegister from "../pages/Auth/PatientRegister";
@@ -8,9 +10,15 @@ import GoogleAuthSuccess from "../pages/Auth/GoogleAuthSuccess";
 import EmailVerification from "../pages/Auth/EmailVerification";
 import UnauthorizedPage from "../pages/Auth/UnauthorizedPage";
 
+
 const PublicRoutes = () => {
   return (
     <Routes>
+ 
+      <Route path="/analytics" element={<Analytics />} />
+
+      {/* Add more public routes here as needed */}
+      {/* Example: <Route path="/about" element={<About />} /> */}
        <Route exact path="/" element={<Home />} /> 
        <Route exact path="/login" element={<LoginPage />} /> 
        <Route exact path="/verify-email" element={<EmailVerification/>} /> 
