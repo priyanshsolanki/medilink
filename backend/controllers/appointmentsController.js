@@ -36,19 +36,19 @@ exports.bookAppointment = async (req, res) => {
 
         const availability = await Availability.findOne({ doctorId, date });
         if (!availability) {
-            return res.status(200).json({ message: 'No availability for this doctor on the selected date' });
+            return res.status(403).json({ message: 'No availability for this doctor on the selected date' });
         }
 
         const { startTime, endTime } = availability;
         const availableSlots = getTimeSlots(startTime, endTime);
 
         if (!availableSlots.includes(time)) {
-            return res.status(200).json({ message: 'Selected time is not within available slots' });
+            return res.status(403).json({ message: 'Selected time is not within available slots' });
         }
 
         const conflict = await Appointment.findOne({ doctorId, date, time, status: { $ne: 'cancelled' } });
         if (conflict) {
-            return res.status(200).json({ message: 'Time slot already booked by another patient' });
+            return res.status(403).json({ message: 'Time slot already booked by another patient' });
         }
 
         const appointment = new Appointment({ patientId, doctorId, date, time, status: 'confirmed' });

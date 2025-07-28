@@ -44,6 +44,7 @@ app.use('/api/availability', require('./routes/availability'));
 app.use('/api/appointments', require('./routes/appointments'));
 app.use('/api/messages', require('./controllers/messageController'));
 app.use('/api', require('./routes/records'));
+app.use('/api/video', require('./routes/videoRoutes'));
 
 const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -13,4 +13,8 @@ const appointmentSchema = new mongoose.Schema({
     notes: { type: String, default: '' },
 }, { timestamps: true });
 
+function getAppointmentById(id) {
+    return appointments.find(a => a._id === id);
+  }
+
 module.exports = mongoose.model('Appointment', appointmentSchema);
