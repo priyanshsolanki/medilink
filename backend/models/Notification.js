@@ -12,7 +12,7 @@ const notificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['appointment', 'reschedule', 'cancel', 'status_update'],
+        enum: ['appointment', 'reschedule', 'cancel', 'status_update', 'message'],
         required: true,
     },
     message: {
