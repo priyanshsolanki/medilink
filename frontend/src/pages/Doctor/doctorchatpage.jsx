@@ -112,7 +112,7 @@ function ChatWindow({ userType, patientId, currentUserId }) {
 
   return (
       <div className="flex flex-col h-full">
-        <div ref={containerRef} className="flex-1 p-4 overflow-y-auto space-y-4">
+        <div ref={containerRef} className="flex-1 p-4 overflow-y-auto space-y-4 min-h-0">
           {messages.length === 0 ? (
               <div className="flex items-center justify-center h-full text-gray-500">
                 <p className="text-sm">No messages yet. Start the conversation!</p>
@@ -140,7 +140,7 @@ function ChatWindow({ userType, patientId, currentUserId }) {
               })
           )}
         </div>
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
+        <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-gray-50">
           <form onSubmit={sendMessageHandler} className="flex items-center space-x-3">
             <input
                 type="text"
@@ -179,19 +179,6 @@ export default function DoctorPatientChatPage() {
     userService.getUserById(patientId)
         .then(data => setPatient(data))
         .catch(err => console.error(err));
-
-    // Fetch current user data (assuming you have a way to get current user)
-    // You might need to adjust this based on your authentication system
-    // const getCurrentUser = async () => {
-    //   try {
-    //     // Replace this with your actual method to get current user
-    //     const userData = await userService.getCurrentUser(); // You'll need to implement this
-    //     setCurrentUser(userData);
-    //   } catch (err) {
-    //     console.error('Error fetching current user:', err);
-    //   }
-    // };
-    // getCurrentUser();
   }, [patientId]);
 
   const loadRecords = () => {
@@ -414,11 +401,11 @@ export default function DoctorPatientChatPage() {
         </main>
 
         {/* Chat Sidebar */}
-        <div className={`fixed right-0 top-0 h-full w-96 bg-white shadow-lg border-l border-gray-200 transform transition-transform duration-300 z-50 ${
+        <div className={`fixed right-0 top-0 h-screen w-96 bg-white shadow-lg border-l border-gray-200 transform transition-transform duration-300 z-50 ${
             isChatOpen ? 'translate-x-0' : 'translate-x-full'
         }`}>
-          <div className="flex flex-col h-full">
-            <div className="p-4 border-b border-gray-200 bg-gray-50">
+          <div className="flex flex-col h-screen">
+            <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-gray-50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
@@ -441,11 +428,13 @@ export default function DoctorPatientChatPage() {
               </div>
               <div className="text-sm text-gray-500 mt-1">Online now</div>
             </div>
-            <ChatWindow
-                userType="doctor"
-                patientId={patientId}
-                currentUserId={authUser?.id}
-            />
+            <div className="flex-1 min-h-0">
+              <ChatWindow
+                  userType="doctor"
+                  patientId={patientId}
+                  currentUserId={authUser?.id}
+              />
+            </div>
           </div>
         </div>
 

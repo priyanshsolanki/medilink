@@ -20,7 +20,6 @@ router.post('/send', auth, async (req, res) => {
             return res.status(404).json({ message: 'Recipient not found' });
         }
 
-        // Allow any authenticated user to message any other user
         if (senderId === recipientId) {
             return res.status(403).json({ message: 'Cannot send message to yourself' });
         }
@@ -33,8 +32,11 @@ router.post('/send', auth, async (req, res) => {
         });
         await message.save();
 
-        // Notify recipient of new message
-        const sender = await User.findById(senderId, 'name');
+        const sender = await User.findById(senderId, 'name').lean();
+        if (!sender) {
+            return res.status(404).json({ message: 'Sender not found' });
+        }
+
         await NotificationService.scheduleNotification(
             recipientId,
             message._id,
@@ -46,7 +48,7 @@ router.post('/send', auth, async (req, res) => {
 
         res.status(201).json({ message: 'Message sent successfully', messageId: message._id });
     } catch (err) {
-        console.error(err);
+        console.error('Error in /send:', err);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
@@ -66,13 +68,12 @@ router.get('/conversation/:userId', auth, async (req, res) => {
             return res.status(404).json({ message: 'Target user not found' });
         }
 
-        // Fetch messages where the logged-in user is either sender or recipient
         const messages = await Message.find({
             $or: [
                 { senderId: userId, recipientId: targetUserId },
                 { senderId: targetUserId, recipientId: userId }
             ]
-        }).populate('senderId', 'name').sort({ timestamp: -1 }); // Sort by timestamp descending
+        }).populate('senderId', 'name').sort({ timestamp: -1 });
 
         if (!messages.length) {
             return res.status(404).json({ message: 'No conversation found with this user' });
@@ -87,18 +88,67 @@ router.get('/conversation/:userId', auth, async (req, res) => {
             timestamp: msg.timestamp,
         })));
     } catch (err) {
-        console.error(err);
+        console.error('Error in /conversation:', err);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 
-// Get all messages for the logged-in user
+// Get all messages for the logged-in user (grouped by doctor)
+router.get('/all', auth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const messages = await Message.find({
+            $or: [
+                { senderId: userId },
+                { recipientId: userId }
+            ]
+        }).populate('senderId', 'name').populate('recipientId', 'name').sort({ timestamp: -1 });
+
+        if (!messages.length) {
+            return res.status(404).json({ message: 'No messages found' });
+        }
+
+        // Group messages by doctor (assuming senderId is the doctor when patient is recipient, or vice versa)
+        const conversations = {};
+        messages.forEach(msg => {
+            const doctorId = msg.senderId._id.toString() === userId ? msg.recipientId._id : msg.senderId._id;
+            const doctorName = msg.senderId._id.toString() === userId ? msg.recipientId.name : msg.senderId.name;
+            if (!conversations[doctorId]) {
+                conversations[doctorId] = {
+                    doctorId,
+                    doctorName,
+                    latestMessage: null,
+                    unreadCount: 0,
+                };
+            }
+            if (!conversations[doctorId].latestMessage || msg.timestamp > conversations[doctorId].latestMessage.timestamp) {
+                conversations[doctorId].latestMessage = {
+                    id: msg._id,
+                    encryptedContent: msg.encryptedContent,
+                    timestamp: msg.timestamp,
+                    isRead: msg.isRead,
+                };
+            }
+            if (msg.recipientId._id.toString() === userId && !msg.isRead) {
+                conversations[doctorId].unreadCount += 1;
+            }
+        });
+
+        res.json(Object.values(conversations));
+    } catch (err) {
+        console.error('Error in /all:', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+// Get all messages for the logged-in user (inbox view)
 router.get('/inbox', auth, async (req, res) => {
     try {
         const userId = req.user.id;
         const messages = await Message.find({
             recipientId: userId,
-        }).populate('senderId', 'name').sort({ timestamp: -1 }); // Sort by timestamp descending
+        }).populate('senderId', 'name').sort({ timestamp: -1 });
 
         if (!messages.length) {
             return res.status(404).json({ message: 'No messages found' });
@@ -113,7 +163,7 @@ router.get('/inbox', auth, async (req, res) => {
             timestamp: msg.timestamp,
         })));
     } catch (err) {
-        console.error(err);
+        console.error('Error in /inbox:', err);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
@@ -137,7 +187,7 @@ router.put('/:messageId/read', auth, async (req, res) => {
 
         res.json({ message: 'Message marked as read' });
     } catch (err) {
-        console.error(err);
+        console.error('Error in /read:', err);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });

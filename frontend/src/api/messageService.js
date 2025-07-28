@@ -45,6 +45,22 @@ const messageService = {
     },
 
     /**
+     * Get all messages for the logged-in user (grouped by doctor)
+     */
+    getAllMessages: async () => {
+        try {
+            const res = await axiosInstance.get('/messages/all', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`, // Adjust token storage as needed
+                },
+            });
+            return res.data;          // Array of conversation objects
+        } catch (error) {
+            handleApiError(error, 'Could not load conversations');
+        }
+    },
+
+    /**
      * Get all messages for the logged-in user
      */
     getInbox: async () => {
@@ -85,6 +101,7 @@ const messageService = {
 export const {
     sendMessage,
     getConversation,
+    getAllMessages,
     getInbox,
     markAsRead,
 } = messageService;
