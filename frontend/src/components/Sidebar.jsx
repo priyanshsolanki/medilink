@@ -94,7 +94,7 @@ const Sidebar = () => {
 
         <div>
           <NavLink
-            to="/logout"
+            to="/"
             onClick={() => logout()}
             className="flex items-center space-x-3 text-red-600 hover:bg-red-50 p-3 rounded-lg"
           >

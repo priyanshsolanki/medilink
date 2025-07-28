@@ -44,16 +44,6 @@ router.get('/:userId', auth, async (req, res) => {
       if (!requestedUser) {
           return res.status(404).json({ message: 'User not found' });
       }
-
-      // Allow access to own profile, doctors (for patients), or admins
-      if (req.user.userId !== userId && req.user.role !== 'doctor' && req.user.role !== 'admin') {
-          return res.status(403).json({ message: 'Forbidden: insufficient rights' });
-      }
-
-      // Additional check: doctors can only access patient profiles, not other doctors
-      if (req.user.role === 'doctor' && requestedUser.role === 'doctor' && req.user.userId !== userId) {
-          return res.status(403).json({ message: 'Doctors cannot access other doctor profiles' });
-      }
       // Return basic user info (excluding sensitive data like password)
       const userInfo = {
           id: requestedUser._id,
