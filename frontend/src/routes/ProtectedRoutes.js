@@ -15,6 +15,7 @@ import PatientDashboard from "../pages/Patient/Patientdashboard";
 import MyAppointments from "../pages/Patient/BookAppointments";
 import DoctorChatPage from "../pages/Doctor/doctorchatpage";
 import PatientChatPage from "../pages/Patient/patientchatpage";
+import VideoCallPage from "../pages/VideoCallPage";
 const ProtectedRoutes = () => {
   return (
     <Routes>
@@ -25,6 +26,8 @@ const ProtectedRoutes = () => {
 
       <Route element={<PrivateRoute allowedRoles={[Roles.DOCTOR,Roles.USER]} />}>
        {/* Add routes that both users have access */}
+       <Route path="/consult/:appointmentId" element={<VideoCallPage />} />
+
       </Route>
       <Route element={<PrivateRoute allowedRoles={[Roles.DOCTOR]} />}>
        {/* Add routes that only doctors have access */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
@@ -238,7 +238,7 @@ const ScheduleManagement = () => {
         return "📋";
     }
   };
-
+  const navigate = useNavigate();
   const handleViewAppointment = (appointment) => {
     setSelectedAppointment(appointment);
     setIsViewModalOpen(true);
@@ -427,7 +427,7 @@ const ScheduleManagement = () => {
                       >
                         View
                       </button>
-                      <button className="text-green-500 hover:text-green-700 text-xs sm:text-sm">
+                      <button onClick={()=>navigate(`/consult/${appointment._id}`)} className="text-green-500 hover:text-green-700 text-xs sm:text-sm">
                         Start Call
                       </button>
                       <button
