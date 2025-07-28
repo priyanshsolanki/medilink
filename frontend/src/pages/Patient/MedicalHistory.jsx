@@ -13,38 +13,7 @@ import { useAuth } from "../../context/AuthContext";
 
 const MedicalHistory = () => {
   const [medicalRecords,setMedicalRecords] = useState([
-    {
-      id: 1,
-      type: "Lab Results",
-      date: "2025-06-10",
-      title: "Blood Test Results",
-      doctor: "Dr. Sarah Johnson",
-      files: ["Complete Blood Count.pdf", "Cholesterol Panel.pdf"],
-    },
-    {
-      id: 2,
-      type: "Imaging",
-      date: "2025-05-15",
-      title: "Chest X-Ray",
-      doctor: "Dr. Michael Chen",
-      files: ["X-Ray_20250515.pdf", "Radiology_Report.pdf"],
-    },
-    {
-      id: 3,
-      type: "Prescription",
-      date: "2025-04-22",
-      title: "Medication Renewal",
-      doctor: "Dr. Emily Rodriguez",
-      files: ["Prescription_Atorvastatin.pdf"],
-    },
-    {
-      id: 4,
-      type: "Consultation Notes",
-      date: "2025-03-18",
-      title: "Annual Checkup",
-      doctor: "Dr. David Wilson",
-      files: ["Consultation_Notes.pdf"],
-    },
+   
   ]);
   const {authUser} = useAuth();
   const [searchTerm, setSearchTerm] = useState("");

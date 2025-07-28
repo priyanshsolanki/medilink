@@ -1,11 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { AlarmClock, BellDot, Mail, Phone, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
+import userService from "../../api/userService";
+import { useAuth } from "../../context/AuthContext";
 
 const Settings = () => {
+  const {authUser} = useAuth();
+  const [doctor,setDoctor] = useState();
   const [date, setDate] = useState(new Date());
   const [notificationPrefs, setNotificationPrefs] = useState({
     email: true,
@@ -13,12 +17,6 @@ const Settings = () => {
     push: true,
     reminder: true,
   });
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-
-  const appointments = [
-    { id: 1, name: "Sarah Johnson" },
-    { id: 2, name: "Michael Chen" },
-  ];
 
   const toggleNotification = (type) => {
     setNotificationPrefs((prev) => ({
@@ -26,6 +24,13 @@ const Settings = () => {
       [type]: !prev[type],
     }));
   };
+
+  // Fetch doctor info
+  useEffect(() => {
+    userService.getUserById(authUser.id)
+      .then(data => setDoctor(data))
+      .catch(err => console.error(err));
+  }, [authUser.id]);
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-100">
@@ -53,7 +58,7 @@ const Settings = () => {
               </label>
               <input
                 type="text"
-                defaultValue="Dr. Sarah Johnson"
+                defaultValue={doctor?.name}
                 className="w-full p-2 border border-gray-300 rounded-md"
               />
             </div>
@@ -63,7 +68,7 @@ const Settings = () => {
               </label>
               <input
                 type="email"
-                defaultValue="sarah.johnson@clinic.com"
+                defaultValue={doctor?.email}
                 className="w-full p-2 border border-gray-300 rounded-md"
               />
             </div>
