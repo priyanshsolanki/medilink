@@ -4,7 +4,7 @@ import axiosInstance from './axiosInstance';
 
 const handleApiError = (error, fallbackMessage = 'Something went wrong') => {
   const message = error?.response?.data?.message || fallbackMessage;
-  toast.error(message);
+  // toast.error(message);
   throw new Error(message);
 };
 

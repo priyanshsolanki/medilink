@@ -410,11 +410,7 @@ const PatientAppointmentsDashboard = () => {
                               <button onClick={()=>{navigate(`/consult/${appointment.appointmentId}`)}} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
                                 Join Call
                               </button>
-                              {(
-                                <button className="px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors">
-                                  Reschedule
-                                </button>
-                              )}
+                             
                               {(
                                 <button className="px-4 py-2 text-red-600 text-sm rounded-lg hover:bg-red-50 transition-colors">
                                   Cancel

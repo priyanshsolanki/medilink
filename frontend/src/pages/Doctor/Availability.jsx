@@ -101,9 +101,6 @@ export default function SetAvailability() {
               <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Set Availability</h1>
               <p className="text-gray-600">Manage your available time slots</p>
             </div>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
-              <Save className="w-4 h-4" /> Save Changes
-            </button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

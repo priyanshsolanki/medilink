@@ -1,7 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import { Roles } from "../constants/AccessConstants";
 import PrivateRoute from "../components/PrivateRoute";
-import { Dashboard } from "../pages/Dashboard";
+import  Dashboard  from "../pages/Dashboard";
 
 
 import DoctorAppointment from "../pages/Doctor/DoctorAppointment";

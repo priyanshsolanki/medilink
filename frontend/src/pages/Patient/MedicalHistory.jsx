@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FileText,
   Search,
@@ -8,50 +8,28 @@ import {
   Printer,
 } from "lucide-react";
 import Sidebar from "../../components/Sidebar";
+import recordService from "../../api/recordService";
+import { useAuth } from "../../context/AuthContext";
 
 const MedicalHistory = () => {
-  const [medicalRecords] = useState([
-    {
-      id: 1,
-      type: "Lab Results",
-      date: "2025-06-10",
-      title: "Blood Test Results",
-      doctor: "Dr. Sarah Johnson",
-      files: ["Complete Blood Count.pdf", "Cholesterol Panel.pdf"],
-    },
-    {
-      id: 2,
-      type: "Imaging",
-      date: "2025-05-15",
-      title: "Chest X-Ray",
-      doctor: "Dr. Michael Chen",
-      files: ["X-Ray_20250515.pdf", "Radiology_Report.pdf"],
-    },
-    {
-      id: 3,
-      type: "Prescription",
-      date: "2025-04-22",
-      title: "Medication Renewal",
-      doctor: "Dr. Emily Rodriguez",
-      files: ["Prescription_Atorvastatin.pdf"],
-    },
-    {
-      id: 4,
-      type: "Consultation Notes",
-      date: "2025-03-18",
-      title: "Annual Checkup",
-      doctor: "Dr. David Wilson",
-      files: ["Consultation_Notes.pdf"],
-    },
+  const [medicalRecords,setMedicalRecords] = useState([
+   
   ]);
-
+  const {authUser} = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
-
+  useEffect(()=>{
+    const loadRecords = () => {
+      recordService.getRecords(authUser.id)
+        .then(data => setMedicalRecords(data))
+        .catch(err => console.error(err));
+    };
+    loadRecords();
+  },[])
   const filteredRecords = medicalRecords.filter((record) => {
     const matchesSearch =
-      record.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.doctor.toLowerCase().includes(searchTerm.toLowerCase());
+      record?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record?.doctor?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter =
       selectedFilter === "all" || record.type === selectedFilter;
     return matchesSearch && matchesFilter;
@@ -150,14 +128,14 @@ const MedicalHistory = () => {
                               {record.type}
                             </span>
                             <span className="text-sm text-gray-500">
-                              {formatDate(record.date)}
+                              {formatDate(record.createdAt)}
                             </span>
                           </div>
                           <h3 className="text-lg font-medium text-gray-900 mt-2">
                             {record.title}
                           </h3>
                           <p className="text-sm text-gray-600 mt-1">
-                            {record.doctor}
+                            Dr. {record?.uploadedBy?.name}
                           </p>
                         </div>
                       </div>
@@ -167,30 +145,23 @@ const MedicalHistory = () => {
                           Files:
                         </h4>
                         <div className="space-y-2">
-                          {record.files.map((file, index) => (
+                          {
                             <div
-                              key={index}
                               className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                             >
                               <div className="flex items-center gap-3">
                                 <FileText className="w-4 h-4 text-gray-400" />
                                 <span className="text-sm text-gray-700">
-                                  {file}
+                                  {record.title}
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <button className="p-1 text-blue-600 hover:text-blue-800">
+                                <button onClick={()=> window.open(record.fileUrl, '_blank')}  className="p-1 text-blue-600 hover:text-blue-800">
                                   <Download className="w-4 h-4" />
-                                </button>
-                                <button className="p-1 text-gray-600 hover:text-gray-800">
-                                  <Share2 className="w-4 h-4" />
-                                </button>
-                                <button className="p-1 text-gray-600 hover:text-gray-800">
-                                  <Printer className="w-4 h-4" />
                                 </button>
                               </div>
                             </div>
-                          ))}
+                         }
                         </div>
                       </div>
                     </div>
