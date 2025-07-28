@@ -25,7 +25,6 @@ const Sidebar = () => {
 
   const doctorNavItems = [
     { name: "Home", icon: <Home size={20} />, path: "/doctor/dashboard" },
-    { name: "Profile", icon: <User2 size={20} />, path: "/profile" },
     { name: "Appointments", icon: <Calendar size={20} />, path: "/doctor/appointment" },
     { name: "Patients", icon: <Users size={20} />, path: "/patient-directory" },
     { name: "Availability", icon: <Timer size={20} />, path: "/availability" },
