@@ -2,22 +2,24 @@ import { Route, Routes } from "react-router-dom";
 import { Roles } from "../constants/AccessConstants";
 import PrivateRoute from "../components/PrivateRoute";
 import  Dashboard  from "../pages/Dashboard";
+import React, { Suspense, lazy } from "react";
 
 
-import DoctorAppointment from "../pages/Doctor/DoctorAppointment";
-import Availability from "../pages/Doctor/Availability";
-import PatientDirectory from "../pages/Doctor/Patientdirectory";
-import Settings from "../pages/Doctor/Settings";
-import PharmacyLocator from "../pages/Patient/PharmacyLocator";
-import MedicalHistory from "../pages/Patient/MedicalHistory";
-import PatientProfile from "../pages/Patient/PatientProfile";
-import PatientDashboard from "../pages/Patient/Patientdashboard";
-import MyAppointments from "../pages/Patient/BookAppointments";
-import DoctorChatPage from "../pages/Doctor/doctorchatpage";
-import PatientChatPage from "../pages/Patient/patientchatpage";
-import VideoCallPage from "../pages/VideoCallPage";
+const DoctorAppointment = lazy(() => import("../pages/Doctor/DoctorAppointment"));
+const Availability = lazy(() => import("../pages/Doctor/Availability"));
+const PatientDirectory = lazy(() => import("../pages/Doctor/Patientdirectory"));
+const Settings = lazy(() => import("../pages/Doctor/Settings"));
+const PharmacyLocator = lazy(() => import("../pages/Patient/PharmacyLocator"));
+const MedicalHistory = lazy(() => import("../pages/Patient/MedicalHistory"));
+const PatientProfile = lazy(() => import("../pages/Patient/PatientProfile"));
+const PatientDashboard = lazy(() => import("../pages/Patient/Patientdashboard"));
+const MyAppointments = lazy(() => import("../pages/Patient/BookAppointments"));
+const DoctorChatPage = lazy(() => import("../pages/Doctor/doctorchatpage"));
+const PatientChatPage = lazy(() => import("../pages/Patient/patientchatpage"));
+const VideoCallPage = lazy(() => import("../pages/VideoCallPage"));
 const ProtectedRoutes = () => {
   return (
+    <Suspense fallback={<div className="p-10 text-center">Loading...</div>}>
     <Routes>
       <Route path="/doctor/chat/:patientId" element={<DoctorChatPage />} />
       <Route path="/patient/chat" element={<PatientChatPage />} />
@@ -49,6 +51,7 @@ const ProtectedRoutes = () => {
 
       </Route>
     </Routes>
+    </Suspense>
   );
 };
 

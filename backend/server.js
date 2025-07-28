@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const connectDB = require('./config/db');
 const cors = require('cors');
+const compression = require('compression');
+const helmet = require('helmet');
 
 const passport = require('./config/passport');
 const session = require('express-session');
@@ -21,6 +23,20 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(compression());
+app.use(
+    helmet.contentSecurityPolicy({
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:"],
+        connectSrc: ["'self'"],
+        frameAncestors: ["'none'"],
+      }
+    })
+  );                    
+app.disable('x-powered-by');
 
 // --- Session & Passport Setup ---
 app.use(session({
