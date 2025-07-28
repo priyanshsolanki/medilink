@@ -2,7 +2,7 @@ import React from 'react';
 import { mount, shallow } from 'enzyme';
 import TextareaAutosize from '@material-ui/core/TextareaAutosize';
 
-import ChatInput from '../ChatInput/ChatInput';
+import ChatInput from './ChatInput';
 import { CircularProgress } from '@material-ui/core';
 import FileAttachmentIcon from '../../../icons/FileAttachmentIcon';
 import SendMessageIcon from '../../../icons/SendMessageIcon';

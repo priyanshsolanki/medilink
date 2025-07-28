@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import VideoRoom from '../components/VideoRoom';
 import { useParams, useLocation } from 'react-router-dom';
 import axiosInstance from './../api/axiosInstance';
 const VideoCallPage = () => {
@@ -16,7 +15,7 @@ const VideoCallPage = () => {
       .then(res => {
         console.log(res.data)
         setRoomInfo(res.data)
-        window.location.replace(`http://localhost:3000/room/${res.data.roomName}?token=${res.data.token}`);
+        window.location.replace(`${process.env.REACT_APP_VIDEO_BASE_URL}/room/${res.data.roomName}?token=${res.data.token}`);
     }
     
     )

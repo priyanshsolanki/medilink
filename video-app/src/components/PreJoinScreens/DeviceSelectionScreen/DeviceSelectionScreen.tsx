@@ -187,7 +187,7 @@ export default function DeviceSelectionScreen({ name, roomName, setStep }: Devic
 
             <Grid item md={5} sm={12} xs={12}>
               <div className={classes.joinButtons}>
-                <Button variant="outlined" color="primary" onClick={() => setStep(Steps.roomNameStep)}>
+                <Button variant="outlined" color="primary" onClick={() => window.location.replace(`${process.env.REACT_APP_CLIENT_URL}`)}>
                   Cancel
                 </Button>
                 <Button

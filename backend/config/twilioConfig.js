@@ -15,7 +15,6 @@ function generateAccessToken(identity, room) {
     process.env.TWILIO_API_SECRET,
     { identity, ttl: 3600 } // 1-hour TTL
   );
-  console.log(token);
   token.addGrant(new VideoGrant({ room }));
   return token.toJwt();
 }
