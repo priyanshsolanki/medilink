@@ -102,12 +102,12 @@ export default function DoctorAppointmentBooking() {
       ? doctors
       : doctors.filter((doc) => doc.specialty === selectedSpecialty);
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
+      const q = searchQuery?.toLowerCase();
       list = list.filter(
         (doc) =>
-          doc.name.toLowerCase().includes(q) ||
-          doc.specialty.toLowerCase().includes(q) ||
-          doc.location.toLowerCase().includes(q)
+          doc?.name?.toLowerCase().includes(q) ||
+          doc?.specialty?.toLowerCase().includes(q) ||
+          doc?.location?.toLowerCase().includes(q)
       );
     }
     return list;
@@ -323,7 +323,7 @@ export default function DoctorAppointmentBooking() {
                         : 'bg-gray-100 text-gray-700'
                     }`}
                   >
-                    {new Date(date).toLocaleDateString()}
+                    {new Date(date)?.toLocaleDateString()}
                   </button>
                 ))}
               </div>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FileText,
   Search,
@@ -8,9 +8,11 @@ import {
   Printer,
 } from "lucide-react";
 import Sidebar from "../../components/Sidebar";
+import recordService from "../../api/recordService";
+import { useAuth } from "../../context/AuthContext";
 
 const MedicalHistory = () => {
-  const [medicalRecords] = useState([
+  const [medicalRecords,setMedicalRecords] = useState([
     {
       id: 1,
       type: "Lab Results",
@@ -44,14 +46,21 @@ const MedicalHistory = () => {
       files: ["Consultation_Notes.pdf"],
     },
   ]);
-
+  const {authUser} = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
-
+  useEffect(()=>{
+    const loadRecords = () => {
+      recordService.getRecords(authUser.id)
+        .then(data => setMedicalRecords(data))
+        .catch(err => console.error(err));
+    };
+    loadRecords();
+  },[])
   const filteredRecords = medicalRecords.filter((record) => {
     const matchesSearch =
-      record.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.doctor.toLowerCase().includes(searchTerm.toLowerCase());
+      record?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record?.doctor?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter =
       selectedFilter === "all" || record.type === selectedFilter;
     return matchesSearch && matchesFilter;
@@ -150,14 +159,14 @@ const MedicalHistory = () => {
                               {record.type}
                             </span>
                             <span className="text-sm text-gray-500">
-                              {formatDate(record.date)}
+                              {formatDate(record.createdAt)}
                             </span>
                           </div>
                           <h3 className="text-lg font-medium text-gray-900 mt-2">
                             {record.title}
                           </h3>
                           <p className="text-sm text-gray-600 mt-1">
-                            {record.doctor}
+                            Dr. {record?.uploadedBy?.name}
                           </p>
                         </div>
                       </div>
@@ -167,30 +176,23 @@ const MedicalHistory = () => {
                           Files:
                         </h4>
                         <div className="space-y-2">
-                          {record.files.map((file, index) => (
+                          {
                             <div
-                              key={index}
                               className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                             >
                               <div className="flex items-center gap-3">
                                 <FileText className="w-4 h-4 text-gray-400" />
                                 <span className="text-sm text-gray-700">
-                                  {file}
+                                  {record.title}
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <button className="p-1 text-blue-600 hover:text-blue-800">
+                                <button onClick={()=> window.open(record.fileUrl, '_blank')}  className="p-1 text-blue-600 hover:text-blue-800">
                                   <Download className="w-4 h-4" />
-                                </button>
-                                <button className="p-1 text-gray-600 hover:text-gray-800">
-                                  <Share2 className="w-4 h-4" />
-                                </button>
-                                <button className="p-1 text-gray-600 hover:text-gray-800">
-                                  <Printer className="w-4 h-4" />
                                 </button>
                               </div>
                             </div>
-                          ))}
+                         }
                         </div>
                       </div>
                     </div>
