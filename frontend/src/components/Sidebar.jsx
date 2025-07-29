@@ -28,7 +28,6 @@ const Sidebar = () => {
     { name: "Home", icon: <Home size={20} />, path: "/doctor/dashboard" },
     { name: "Appointments", icon: <Calendar size={20} />, path: "/doctor/appointment" },
     { name: "Patients", icon: <Users size={20} />, path: "/patient-directory" },
-    { name: "Chats", icon: <MessageCircle size={20} />, path: "/doctor/chats" },
     { name: "Availability", icon: <Timer size={20} />, path: "/availability" },
     { name: "Settings", icon: <Settings size={20} />, path: "/settings" },
   ];

@@ -13,8 +13,7 @@ const appointmentSchema = new mongoose.Schema({
     notes: { type: String, default: '' },
 }, { timestamps: true });
 
-function getAppointmentById(id) {
-    return appointments.find(a => a._id === id);
-  }
+// Composite index for doctor + date + time to prevent double-booking
+appointmentSchema.index({ doctorId: 1, date: 1, time: 1 }, { unique: true });
 
 module.exports = mongoose.model('Appointment', appointmentSchema);
